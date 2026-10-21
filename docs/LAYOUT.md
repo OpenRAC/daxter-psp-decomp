@@ -111,7 +111,7 @@ and the save of `$ra` goes from **1 to 15 instructions**, with a mode at 1:
 A scan that looks five instructions ahead misses 4 700 of the 14 655
 candidates. The inventory now looks sixteen.
 
-### A third trap, found by lot L07: the registers have to be followed
+### A fourth trap: the registers have to be followed
 
 To resolve what a body *reads*, the registers have to be followed, not
 guessed. The first resolver paired a `lui` with whatever came later, and
@@ -126,6 +126,57 @@ by it.
 
 The same rule applies to the assert resolver, where the argument of the
 helper is built the same way.
+
+### And a fifth: the immediate is signed
+
+The immediate of `addiu` is signed. `addiu $a3, $a3, -0xca8` adds
+negative `0xca8`, not positive `0xff58`, and completing an address with
+the unsigned value puts it in the wrong page — where another string
+waits. The bodies that read a string went from eleven to thirty-three
+when the sign was restored, and the false ones went to zero.
+
+### And a sixth: a code address can look like a string
+
+A run of printable bytes in the code looks exactly like a string. Two
+bodies were "reading" a comma and the digit four, and both were code. The
+resolver now only looks in the sections that are allocated and not
+executable.
+
+---
+
+## 2bis. The jump tables, and the delay slot of a likely branch
+
+The graph follows a **computed jump** — a jump through a register — by
+resolving the table it comes from:
+
+* the **address of the table** is computed with `lui`, `addu` and `lw`;
+* the **index** is masked, with `andi` or `sltiu`;
+* the **number of cases** is read from the code, never from the data: two
+  neighbouring tables touch, and reading the data would say sixteen cases
+  where there are eight;
+* the table holds the address of each case, and the graph follows them.
+
+232 computed jumps are met, 221 tables are resolved, 2 488 cases are
+followed, and **not one of them is outside the body that holds it**.
+
+Seven jumps stay unresolved — the ones with no index control. The old
+behaviour is kept for them and the body stays **provisional**, because a
+body that is not understood is not a guess.
+
+### The delay slot of a likely branch
+
+On the Allegrex, the delay slot of a **likely** branch is executed only
+if the branch is **taken**. This is a property of the processor, measured
+on the target at `0x001D7E08`, and the graph now nullifies the slot on
+the other path.
+
+### The last error class of the sweep
+
+Four bodies of the 661 the wave reviewed are still bounded wrongly. They
+contain no computed jump: they stop on a **strong start** — a call
+target — *inside* the body, and the sweep treats that as the beginning
+of the next body. It is a class of error of its own, and it is written
+down rather than papered over.
 
 ---
 
