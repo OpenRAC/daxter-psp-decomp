@@ -62,8 +62,50 @@ FUNCT_JR = 0x08
 FUNCT_JALR = 0x09
 OP_ADDiu_SP = 0x27BD0000    # addiu $sp, $sp, imm
 
+#: The conditional branches, and the *likely* forms of them.  The likely
+#: branches execute their delay slot whatever the condition is.
+CONDITIONAL = {0x04, 0x05, 0x06, 0x07, 0x14, 0x15, 0x16, 0x17}
+#: The REGIMM family: bltz, bgez, and their likely forms.
+REGIMM = {0x01}
+
 REG_RA = 31
 REG_T9 = 25
+
+
+def _is_conditional(word: int) -> bool:
+    return (word >> 26) in CONDITIONAL or (word >> 26) in REGIMM
+
+
+def _is_jump(word: int) -> bool:
+    """Return True for the unconditional jumps and the returns."""
+    opcode = word >> 26
+    if opcode == 0x08:                    # j
+        return True
+    if opcode == 0x0C:                    # jal target
+        return True
+    if (word & 0xFC000000) == OP_SPECIAL:
+        funct = word & 0x3F
+        if funct in (FUNCT_JR, FUNCT_JALR):
+            return True
+    return False
+
+
+def _is_return(word: int) -> bool:
+    """Return True for a return: a jump through a register."""
+    if (word & 0xFC000000) != OP_SPECIAL:
+        return False
+    if (word & 0x3F) != FUNCT_JR:
+        return False
+    return ((word >> 21) & 0x1F) in (REG_RA, REG_T9)
+
+
+def _is_call(word: int) -> bool:
+    """Return True for a call: the control leaves and comes back."""
+    if (word >> 26) == 0x0C:
+        return True
+    if (word & 0xFC000000) == OP_SPECIAL and (word & 0x3F) == FUNCT_JALR:
+        return True
+    return False
 
 
 def _insn(data: bytes, offset: int) -> int:
@@ -79,6 +121,73 @@ def _branch_target(word: int, pc: int) -> int | None:
         return pc + 4 + ((word & 0xFFFF) << 2 if not (word & 0x8000)
                          else ((word & 0xFFFF) - 0x10000) << 2)
     return None
+
+
+def body_reachable(segment: bytes, start_index: int, limit_index: int) -> set[int]:
+    """Return the instructions a body reaches, and no other.
+
+    This is the control-flow graph of the body, and it is what the review
+    of wave 1 measured as the rule of the end:
+
+        the body ends at the last instruction the graph reaches, plus four.
+
+    Three rules make the graph right, and each of them was bought by a
+    review:
+
+    * the **delay slot** of a branch or a jump is executed.  The successor
+      of a branch is at ``pc + 8``, not at ``pc + 4``.
+    * a **call** does not transfer the control: the body continues after
+      it, and the callee is not part of the body.
+    * a **return** ends the path, and its delay slot is the last
+      instruction of the body.
+    """
+    reachable: set[int] = set()
+    pending = [start_index]
+    while pending:
+        index = pending.pop()
+        if index in reachable:
+            continue
+        if index < 0 or index + 4 > limit_index:
+            continue
+        reachable.add(index)
+        word = struct.unpack_from("<I", segment, index)[0]
+
+        if _is_return(word):
+            # The delay slot of the return is executed, and then the
+            # control leaves the body.
+            if index + 8 <= limit_index:
+                reachable.add(index + 4)
+            continue
+
+        if _is_call(word):
+            # The delay slot is executed, and the body continues after
+            # the call.  The callee is another body.
+            if index + 8 <= limit_index:
+                reachable.add(index + 4)
+                pending.append(index + 8)
+            continue
+
+        if _is_conditional(word):
+            # The delay slot is executed, and either branch is possible.
+            if index + 8 <= limit_index:
+                reachable.add(index + 4)
+                pending.append(index + 8)
+            target = _branch_target(word, index)
+            if target is not None:
+                pending.append(target)
+            continue
+
+        if _is_jump(word):
+            # The delay slot is executed, and the control leaves.
+            if index + 8 <= limit_index:
+                reachable.add(index + 4)
+            target = _branch_target(word, index)
+            if target is not None:
+                pending.append(target)
+            continue
+
+        pending.append(index + 4)
+    return reachable
 
 
 def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
@@ -143,66 +252,49 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
         strong.add(vaddr + index)
 
     # --- the bodies ------------------------------------------------------
-    # A call target *inside* a body that has not returned yet does not
-    # split it: it is a call, not a new function.  A body therefore runs to
-    # its last return before the next start that follows a return.
+    # The body of a function is the set of instructions its control-flow
+    # graph reaches.  A call target is never part of it: a call does not
+    # transfer the control.  The bound is the last instruction the graph
+    # reaches, plus four - the rule the review of wave 1 measured.
     ordered = sorted(strong)
     bodies: list[dict[str, object]] = []
-    body_start: int | None = None
-    body_evidence: set[str] = set()
-
-    def close_body(last_return_index: int) -> None:
-        nonlocal body_start, body_evidence
-        if body_start is None:
-            return
-        start_index = body_start - vaddr
-        end_index = min(last_return_index + 8, len(segment))
+    for position, start in enumerate(ordered):
+        start_index = start - vaddr
+        if start_index < 0 or start_index >= len(segment):
+            continue
+        # The graph is bounded by the next strong start.  A strong start
+        # inside the body is a call target, which the graph does not
+        # follow, so the bound holds; if the graph does reach it, the body
+        # has no return, and the bound moves on.
+        limit_index = len(segment)
+        reachable: set[int] = set()
+        for attempt in range(4):
+            if position + attempt + 1 < len(ordered):
+                candidate = ordered[position + attempt + 1] - vaddr
+            else:
+                candidate = len(segment)
+            reachable = body_reachable(segment, start_index, candidate)
+            limit_index = candidate
+            if candidate >= len(segment) or candidate not in reachable:
+                break
+        if not reachable:
+            continue
+        end_index = min(max(reachable) + 4, len(segment))
+        if end_index <= start_index:
+            continue
+        evidence_here = evidence.get(start, set())
         bodies.append({
-            "start": body_start,
+            "start": start,
             "end": vaddr + end_index,
             "size": end_index - start_index,
-            "bound_source": ("call" if "call" in body_evidence else
-                             "after_return" if "after_return" in body_evidence
+            "bound_source": ("call" if "call" in evidence_here else
+                             "after_return" if "after_return" in evidence_here
                              else "frame"),
-            "evidence": ",".join(sorted(body_evidence)),
-            "calls": call_sites.get(body_start, 0),
+            "evidence": ",".join(sorted(evidence_here)),
+            "calls": call_sites.get(start, 0),
             "returns": sum(1 for index in returns
                            if start_index <= index < end_index),
         })
-        body_start = None
-        body_evidence = set()
-
-    returns_sorted = sorted(returns)
-    for position in ordered:
-        position_index = position - vaddr
-        if position_index < 0 or position_index >= len(segment):
-            continue
-        last_return = None
-        for index in returns_sorted:
-            if index < position_index:
-                last_return = index
-            else:
-                break
-        if body_start is None:
-            body_start = position
-            body_evidence = set(evidence[position])
-            continue
-        if last_return is None:
-            # The open body has not returned yet: this start is a call
-            # inside it, and does not split it.
-            body_evidence |= evidence[position]
-            continue
-        close_body(last_return)
-        body_start = position
-        body_evidence = set(evidence[position])
-
-    if body_start is not None:
-        last_return = None
-        for index in returns_sorted:
-            if index < len(segment):
-                last_return = index
-        if last_return is not None:
-            close_body(last_return)
 
     calls = [
         {"address": target, "sites": count}
