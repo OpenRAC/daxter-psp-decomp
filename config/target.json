@@ -1,0 +1,59 @@
+{
+  "game": "Daxter",
+  "publisher": "Insomniac Games",
+  "platform": "PlayStation Portable",
+  "cpu": "Allegrex (MIPS32r2, little-endian)",
+  "region": "USA",
+  "title_id": "UCUS98618",
+  "disc_version": "1.00",
+  "firmware_required": "2.60",
+  "content_id": "UG",
+  "disc_size": 1405845504,
+  "disc_sha1": "6a54c86d201ad5adaec109b84ffa3798c06282cb",
+  "disc_sha256": "648e237a8a6b56ccdf54a8a1fcb85b0220c633c7d62a17709d5bcf8a413659f4",
+  "disc_entries": 1104,
+  "executable": {
+    "path": "PSP_GAME/SYSDIR/EBOOT.BIN",
+    "container": "~PSP",
+    "module_name": "dax",
+    "size": 4949392,
+    "sha1": "d3ca31c5f3bb47dd09d83b6a61a1f38691ec57d1",
+    "sha256": "66867ab6441d678498977203be637ee651a4743d9725e04b655c071fc9970585",
+    "encrypted": true,
+    "decrypted_sha1": null,
+    "decrypted_sha256": null
+  },
+  "boot_blob": {
+    "path": "PSP_GAME/SYSDIR/BOOT.BIN",
+    "size": 4949041,
+    "sha1": "0c7220dc39c64665e9f2279d84959c04acf3ffd2",
+    "sha256": "00f92dccad4c6715b91d8b5103b431d364a20030b040b913a8b28cc86ac0949f",
+    "note": "not an ELF; the relationship with the executable is not established"
+  },
+  "update": {
+    "executable": {
+      "path": "PSP_GAME/SYSDIR/UPDATE/EBOOT.BIN",
+      "container": "~PSP",
+      "module_name": "update",
+      "size": 3951712,
+      "sha1": "4bf047a3564edd4d9116ce8d3a512043bdf68616",
+      "sha256": "5721cb2c4c4929a4a65ccb31f137ec2408d77409180cbfea729e5df1630bcc0e"
+    },
+    "archive": {
+      "path": "PSP_GAME/SYSDIR/UPDATE/DATA.BIN",
+      "container": "PSAR",
+      "size": 14809632,
+      "sha1": "70fef68d7e4267d9a4e92a46e17ef828ddc9e0b2",
+      "sha256": "c1f72a0c7003e9a3b9a01f60cdb1731ce92eedfacd103f9c714c48350e163635",
+      "note": "the member table and the members are encrypted with a disc-derived key"
+    }
+  },
+  "asset_containers": {
+    "path": "PSP_GAME/USRDIR/data",
+    "count": 342,
+    "container": "Pack",
+    "versions": ["3.2", "3.4"]
+  },
+  "matching_compiler": null,
+  "notes": "The target is the disc executable of version 1.00. The update folder carries the later revision; it is a separate target and is not mixed with the base one."
+}

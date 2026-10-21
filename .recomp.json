@@ -1,0 +1,31 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Daxter",
+  "system": "PSP",
+  "type": ["decomp", "recomp"],
+  "project": "daxter-psp-decomp",
+  "status": "exploring",
+  "toolchain": ["psp-gcc", "PSPRecomp"],
+  "approach": "Matching decompilation of the Allegrex (MIPS32r2) executable of Daxter for PSP: authored C/C++ that builds to a byte-identical copy of the retail executable.",
+  "original": {
+    "region": "USA",
+    "revision": "1.00",
+    "serial": "UCUS98618",
+    "sha1": "d3ca31c5f3bb47dd09d83b6a61a1f38691ec57d1"
+  },
+  "maintainers": [
+    { "name": "llesieur99", "link": "https://github.com/llesieur99" }
+  ],
+  "links": [
+    { "label": "Sibling PSP project", "url": "https://github.com/OpenRAC/rac-sac-decomp" },
+    { "label": "Format research", "url": "https://github.com/OpenRAC/daxter-psp-decomp/blob/main/docs/FORMATS.md" }
+  ],
+  "help": [
+    "decrypting the ~PSP executable",
+    "naming functions",
+    "qualifying a toolchain profile",
+    "matching the first functions"
+  ],
+  "tags": ["Insomniac Games", "Daxter", "MIPS Allegrex", "PSP", "UMD"],
+  "notes": "Early stage. The disc is measured and its four container formats are read (PARAM.SFO, ~PSP, PSAR, Pack); the 342 asset containers are inventoried; the game code is a single monolithic executable behind the ~PSP encryption, not a loader plus level overlays as on PlayStation 2. No function has been matched yet."
+}

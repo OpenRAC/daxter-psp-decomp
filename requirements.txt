@@ -1,0 +1,9 @@
+# The repository's own tools need nothing but the standard library.
+#
+# The optional dependency below is used only by an optional disassembler
+# helper; nothing in tools/ or tests/ imports it, and the checks pass
+# without it.
+#
+#   pip install -r requirements.txt
+#
+# capstone>=5.0

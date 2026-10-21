@@ -1,0 +1,38 @@
+name: bug
+description: A problem with the tools, the tables or the documentation
+title: ""
+labels: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read `AGENTS.md` before filing. This project distinguishes
+        clearly between a defect in the tooling and a research question.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What is wrong
+      description: The behaviour you expected, and the behaviour you got.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: The exact command, and the output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Boundary check
+      description: |
+        Does the report involve game data? The repository never publishes
+        disc images, executables, decrypted executables, instruction
+        listings or assets. If your report contains any of them, say so
+        and remove them before continuing.
+    validations:
+      required: true

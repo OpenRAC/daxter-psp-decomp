@@ -1,0 +1,56 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# The repository's own private workspace: modules, bounds, lots, dossiers.
+# Only the templates are tracked.
+/work/*
+!/work/README.md
+!/work/templates/
+!/work/E0/
+!/work/E0/.gitkeep
+
+# Local copies of the game, and anything extracted from it. Never commit
+# any of these.
+*.iso
+*.bin
+*.elf
+*.prx
+*.psar
+*.pack
+*.pkg
+*.cso
+*.at3
+*.pmf
+*.png
+/original/
+/disc/
+/extracted/
+/decrypted/
+/build/
+/out/
+
+# Compiler and tool output
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.exe
+*.gcda
+*.gcno
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
+
+# Local notes
+*.local
+scratch/
+probe/
+probes/

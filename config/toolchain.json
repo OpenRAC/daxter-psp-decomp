@@ -1,0 +1,33 @@
+{
+  "id": "none-qualified",
+  "status": "empty",
+  "scope": "the Allegrex executable of the pinned USA disc",
+  "provenance": "No toolchain has been qualified yet. The PS2 siblings could not use a modern GCC for the R5900 either, and they solved it by measuring the register mode of the target; the Allegrex case has to be measured the same way, and it has not been.",
+  "candidates": [
+    {
+      "id": "psp-gcc-allegrex",
+      "kind": "Allegrex MIPS cross compiler",
+      "provenance": "The GCC toolchain built for the Allegrex (PSP), as used by the PSPSDK and by the homebrew toolchains. An external binary: pinned by hash, never rebuilt here, never committed.",
+      "flags": {"cc1": ["-quiet", "-O2", "-G0"]},
+      "status": "candidate",
+      "notes": "The PSP SDK defaults are -O2 -G0. The retail build used its own flags, which are unknown; they are part of what phase 2 has to establish."
+    },
+    {
+      "id": "psp-sdk-allegrex",
+      "kind": "Allegrex MIPS cross compiler from the PSPSDK",
+      "provenance": "The PSPSDK toolchain, the one the game was most likely built with. An external binary: pinned by hash, never rebuilt here, never committed.",
+      "flags": {"cc1": ["-quiet", "-O2", "-G0"]},
+      "status": "candidate",
+      "notes": "Closer in spirit to the retail build than a modern GNU toolchain, and therefore the more likely first candidate to measure."
+    },
+    {
+      "id": "psprecomp-allegrex",
+      "kind": "static recompilation toolkit",
+      "provenance": "The Allegrex static-recompilation toolkits: sp00nznet/psprecomp, wizardengineer/psprecomp and the psprism toolchain of anthonyhfm/psprism.",
+      "status": "candidate",
+      "notes": "These recompile rather than decompile. They are the right family of tools for the portability goal, and the wrong tool for the matching goal; they are listed because the project may deliver both, and because the recompilation route is what makes the game playable without the hardware."
+    }
+  ],
+  "trials": [],
+  "notes": "This file records the *candidates* and the evidence each one would need. It does not record a qualified toolchain, because there is none yet: the executable behind the ~PSP container has not been read, so no compiler output can be compared with anything."
+}

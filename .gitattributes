@@ -1,0 +1,13 @@
+# Normalise the line endings of the text files, so that the diffs of the
+# tables and of the tools stay readable across platforms.
+* text=auto eol=lf
+
+*.md   text eol=lf
+*.py   text eol=lf
+*.json text eol=lf
+*.tsv  text eol=lf
+*.yml  text eol=lf
+*.c    text eol=lf
+*.h    text eol=lf
+
+LICENSE text eol=lf

@@ -1,0 +1,48 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: unit tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: structural checks
+        run: python3 tools/check_repository.py
+
+      - name: progress snapshot
+        run: python3 tools/progress.py
+
+      - name: the published tables are consistent with each other
+        run: |
+          python3 - <<'PY'
+          import csv, json, pathlib, sys
+          root = pathlib.Path(".")
+          target = json.loads((root / "config" / "target.json").read_text())
+          with (root / "config" / "disc" / "pack_index.tsv").open(newline="") as handle:
+              packs = list(csv.DictReader(handle, delimiter="\t"))
+          with (root / "config" / "levels" / "modules.tsv").open(newline="") as handle:
+              modules = list(csv.DictReader(handle, delimiter="\t"))
+          assert len(packs) == len(modules), "the two catalogues disagree"
+          assert target["asset_containers"]["count"] == len(packs), \
+              "the pinned asset count and the catalogue disagree"
+          for pack, module in zip(packs, modules):
+              assert pack["path"] == module["path"], "the catalogues disagree"
+              assert pack["entries"] == module["entries"], "the catalogues disagree"
+          print(f"{len(packs)} asset containers, consistent")
+          PY

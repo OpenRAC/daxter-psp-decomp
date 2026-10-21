@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""Unit tests of the repository tools, on synthetic data only.
+
+No game data, no disc image and no retail byte appears in this file. Every
+fixture is built here, byte by byte, from the documented layout of each
+container.
+
+Run:
+    python3 -m unittest discover -s tests
+"""
+
+from __future__ import annotations
+
+import json
+import struct
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+
+import disc_inventory  # noqa: E402
+import psp_elf  # noqa: E402
+import psp_formats as fmt  # noqa: E402
+
+
+def build_sfo(entries: list[tuple[str, str]]) -> bytes:
+    """Build a PARAM.SFO file with the given key/value pairs."""
+    key_table = bytearray()
+    data_table = bytearray()
+    index = bytearray()
+    for key, value in entries:
+        key_offset = len(key_table)
+        key_table += key.encode("ascii") + b"\x00"
+        if value.lstrip("-").isdigit() and len(value) <= 9:
+            data = struct.pack("<i", int(value))
+            fmt_code = fmt.SFO_FORMAT_INT32
+            length = 4
+        else:
+            data = value.encode("utf-8") + b"\x00"
+            fmt_code = fmt.SFO_FORMAT_UTF8
+            length = len(value) + 1
+        slot = len(data)
+        if slot % 4:
+            slot += 4 - slot % 4
+        value_offset = len(data_table)
+        data_table += data + b"\x00" * (slot - len(data))
+        index += struct.pack("<HHHHII", key_offset, fmt_code, length, 0,
+                             slot, value_offset)
+    header_size = 0x14
+    key_table_offset = header_size + len(entries) * 0x10
+    data_table_offset = key_table_offset + len(key_table)
+    while (data_table_offset + len(data_table)) % 4:
+        data_table += b"\x00"
+    header = struct.pack("<4sIIII", fmt.MAGIC_SFO, 0x00000101,
+                         key_table_offset, data_table_offset, len(entries))
+    return bytes(header) + bytes(index) + bytes(key_table) + bytes(data_table)
+
+
+def build_pack(entries: list[tuple[int, bytes, int, int]]) -> bytes:
+    """Build a Pack container with the given (type, payload, id) entries."""
+    count = len(entries) + 1
+    table_start = 0x24 + len(entries) * 0x10
+    table = bytearray()
+    blobs = bytearray()
+    for index, (entry_type, payload, identifier) in enumerate(entries):
+        offset = table_start + len(blobs)
+        table += struct.pack("<IIII", offset, len(payload), entry_type, identifier)
+        blobs += payload
+    header = bytearray(b"Pack")
+    header += struct.pack("<HH", 3, 4)
+    header += struct.pack("<II", table_start, count)
+    header += struct.pack("<IIIII", 0, 0, 0, 0, 0)
+    assert len(header) == 0x24
+    return bytes(header) + bytes(table) + bytes(blobs)
+
+
+def build_psar() -> bytes:
+    return struct.pack("<4sIIII", fmt.MAGIC_PSAR, 3, 0x10, 1, 0) + b"\x00" * 16
+
+
+def build_encrypted_psp(name: str, parameter: int = 0) -> bytes:
+    body = name.encode("ascii") + b"\x00"
+    return (fmt.MAGIC_PSP_ENC + struct.pack("<IH", parameter, 0x0101) +
+            body + b"\x00" * 16)
+
+
+class SfoTests(unittest.TestCase):
+    def test_reads_keys_and_values(self) -> None:
+        blob = build_sfo([("TITLE", "Daxter"), ("DISC_NUMBER", "1")])
+        sfo = fmt.read_sfo(blob)
+        self.assertEqual(sfo.get("TITLE"), "Daxter")
+        self.assertEqual(sfo.get("DISC_NUMBER"), 1)
+        self.assertEqual(sfo.index_entries, 2)
+
+    def test_rejects_a_foreign_file(self) -> None:
+        with self.assertRaises(fmt.FormatError):
+            fmt.read_sfo(b"not an sfo file at all, not even close!!")
+
+    def test_padded_slots_are_honoured(self) -> None:
+        blob = build_sfo([("A", "xy"), ("B", "z")])
+        sfo = fmt.read_sfo(blob)
+        self.assertEqual(sfo.get("A"), "xy")
+        self.assertEqual(sfo.get("B"), "z")
+
+
+class PackTests(unittest.TestCase):
+    def test_reads_entries(self) -> None:
+        blob = build_pack([(3, b"RADI" + b"\x00" * 12, 6),
+                           (2, b"CfCm" + b"\x00" * 28, 7)])
+        pack = fmt.read_pack(blob)
+        self.assertEqual(pack.version_major, 3)
+        self.assertEqual(pack.version_minor, 4)
+        self.assertEqual(pack.count, 3)
+        self.assertEqual(len(pack.entries), 2)
+        self.assertEqual(pack.entries[0].magic, "RADI")
+        self.assertEqual(pack.entries[1].magic, "CfCm")
+        self.assertEqual(pack.entries[0].size, 16)
+
+    def test_type_histogram(self) -> None:
+        blob = build_pack([(3, b"RADI", 1), (3, b"RADI", 2), (2, b"CfCm", 3)])
+        histogram = fmt.read_pack(blob).type_histogram()
+        self.assertEqual(histogram["3:radi-or-mesh"], 2)
+        self.assertEqual(histogram["2:cfcm-primary"], 1)
+
+    def test_rejects_an_out_of_bounds_entry(self) -> None:
+        blob = bytearray(build_pack([(3, b"RADI", 1)]))
+        struct.pack_into("<I", blob, 0x24, 0xFFFFFF)
+        with self.assertRaises(fmt.FormatError):
+            fmt.read_pack(bytes(blob))
+
+    def test_rejects_a_foreign_file(self) -> None:
+        with self.assertRaises(fmt.FormatError):
+            fmt.read_pack(b"Pack but truncated here")
+
+
+class PsarTests(unittest.TestCase):
+    def test_reads_the_header(self) -> None:
+        archive = fmt.read_psar(build_psar())
+        self.assertEqual(archive.version, 3)
+        self.assertEqual(archive.member_count, 1)
+        self.assertEqual(archive.files, [])
+
+    def test_rejects_a_foreign_file(self) -> None:
+        with self.assertRaises(fmt.FormatError):
+            fmt.read_psar(b"PSAR but truncated here")
+
+
+class EncryptedPspTests(unittest.TestCase):
+    def test_reads_the_header(self) -> None:
+        header = fmt.read_encrypted_psp(build_encrypted_psp("dax"))
+        self.assertEqual(header.module_name, "dax")
+        self.assertEqual(header.version, 0x0101)
+        self.assertEqual(header.header_parameter, 0)
+
+    def test_reads_the_update_header(self) -> None:
+        header = fmt.read_encrypted_psp(build_encrypted_psp("update", 0x800))
+        self.assertEqual(header.module_name, "update")
+        self.assertEqual(header.header_parameter, 0x800)
+
+
+class ElfTests(unittest.TestCase):
+    def test_refuses_an_encrypted_executable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "EBOOT.BIN"
+            path.write_bytes(build_encrypted_psp("dax"))
+            with self.assertRaises(psp_elf.ElfError):
+                psp_elf.inspect(path)
+
+    def test_refuses_a_foreign_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "junk.bin"
+            path.write_bytes(b"junk" * 64)
+            with self.assertRaises(psp_elf.ElfError):
+                psp_elf.inspect(path)
+
+
+class InventoryTests(unittest.TestCase):
+    def test_builds_the_tables(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "disc"
+            data = root / "PSP_GAME" / "USRDIR" / "data"
+            data.mkdir(parents=True)
+            (root / "PSP_GAME" / "SYSDIR").mkdir(parents=True)
+            (root / "PSP_GAME" / "SYSDIR" / "EBOOT.BIN").write_bytes(
+                build_encrypted_psp("dax"))
+            (data / "level.bin").write_bytes(
+                build_pack([(3, b"RADI" + b"\x00" * 12, 6)]))
+            out = Path(directory) / "config"
+            counts = disc_inventory.build(root, out)
+            self.assertEqual(counts["packs"], 1)
+            self.assertTrue((out / "disc" / "pack_index.tsv").is_file())
+            self.assertTrue((out / "levels" / "modules.tsv").is_file())
+            rows = (out / "disc" / "pack_index.tsv").read_text(
+                encoding="utf-8").splitlines()
+            self.assertIn("level.bin", rows[1])
+            self.assertEqual(len(rows), 2)
+
+    def test_check_reports_a_stale_table(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "disc"
+            data = root / "PSP_GAME" / "USRDIR" / "data"
+            data.mkdir(parents=True)
+            (data / "level.bin").write_bytes(
+                build_pack([(3, b"RADI" + b"\x00" * 12, 6)]))
+            out = Path(directory) / "config"
+            disc_inventory.build(root, out)
+            self.assertEqual(disc_inventory.check(root, out), 0)
+            (out / "disc" / "pack_index.tsv").write_text("stale\n", encoding="utf-8")
+            self.assertEqual(disc_inventory.check(root, out), 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

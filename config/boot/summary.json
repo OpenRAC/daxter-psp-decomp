@@ -1,0 +1,21 @@
+{
+  "state": "pending-visibility-gate",
+  "executable": {
+    "path": "PSP_GAME/SYSDIR/EBOOT.BIN",
+    "container": "~PSP",
+    "module_name": "dax",
+    "size": 4949392,
+    "sha256": "66867ab6441d678498977203be637ee651a4743d9725e04b655c071fc9970585",
+    "encrypted": true,
+    "decrypted_sha256": null
+  },
+  "sections": [],
+  "programs": [],
+  "entry_point": null,
+  "functions": {
+    "count": 0,
+    "named": 0,
+    "matched": 0
+  },
+  "notes": "Nothing can be measured on the executable until it is decrypted locally. The reader is tools/psp_elf.py; the decrypted file is never committed, only the structure it yields and its hash."
+}
