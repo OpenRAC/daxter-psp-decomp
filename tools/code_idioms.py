@@ -131,8 +131,36 @@ def measure(data: bytes) -> dict[str, object]:
         "lw": sum(1 for w in words if (w & 0xFFFF0000) == 0x8C9C0000),
     }
 
+    # The branches, and the *likely* forms of them.  A compiler of the
+    # 2.95 line never emits a branch-likely; a compiler of the 3.x line
+    # does.  Their presence or their absence is therefore a property of
+    # the compiler line, and it needs no compiler to measure.
+    branch_counts: Counter[str] = Counter()
+    for word in words:
+        opcode = word >> 26
+        if opcode in (0x04, 0x05, 0x06, 0x07):
+            branch_counts["beq/bne/blez/bgtz"] += 1
+        elif opcode in (0x14, 0x15, 0x16, 0x17):
+            branch_counts["branch-likely"] += 1
+        elif opcode == 0x01:
+            field = _rt(word)
+            if field in (0x02, 0x03, 0x10, 0x11):
+                branch_counts["branch-likely"] += 1
+            else:
+                branch_counts["bltz/bgez"] += 1
+    likely = branch_counts.get("branch-likely", 0)
+
     return {
         "instructions": len(words),
+        "branches": {
+            "note": ("a compiler of the 2.95 line emits no branch-likely at "
+                     "all, and a compiler of the 3.x line emits them. Their "
+                     "presence in the retail code is therefore a property of "
+                     "the compiler line, and it is measured on the code "
+                     "itself, with no compiler involved."),
+            "branch_likely": likely,
+            "other": dict(sorted(branch_counts.items())),
+        },
         "frames": {
             "distinct_sizes": len(distinct),
             "sizes": distinct,

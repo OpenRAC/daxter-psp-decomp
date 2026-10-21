@@ -1,4 +1,13 @@
 {
+  "branches": {
+    "branch_likely": 6941,
+    "note": "a compiler of the 2.95 line emits no branch-likely at all, and a compiler of the 3.x line emits them. Their presence in the retail code is therefore a property of the compiler line, and it is measured on the code itself, with no compiler involved.",
+    "other": {
+      "beq/bne/blez/bgtz": 42817,
+      "bltz/bgez": 752,
+      "branch-likely": 6941
+    }
+  },
   "distance_frame_to_save_of_ra": {
     "1": 4322,
     "2": 835,
