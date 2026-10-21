@@ -3,8 +3,9 @@
 The anchor: where the project stands, and what to do next.
 
 **Target:** *Daxter* (USA), PSP, title id `UCUS98618`, disc version 1.00.
-**Status:** `in-progress`. The visibility gate is passed. No function has
-been matched.
+**Status:** `in-progress`. The visibility gate is passed, and the layout of
+the code is established for the two hundred and forty targets of wave 1.
+No function has been matched.
 
 ---
 
@@ -19,7 +20,10 @@ been matched.
 | the binary layout is settled | the code is one monolithic executable, not a loader plus overlays | `docs/FORMATS.md` §5 |
 | **the executable is decrypted** | the ELF is 4 949 041 bytes, SHA-256 `df13fd9d…67d2` | `tools/decrypt_psp.py`, `config/target.json` |
 | **the executable is measured** | 2 segments, 60 sections, module `dax`, 25 imported libraries | `config/boot/summary.json` |
-| **the function candidates are inventoried** | 14 655 frame openings, 8 794 of them saving the return address | `config/boot/functions.tsv` |
+| **the build is identified** | engine SCREAM, object layer Aurora, port by Ready At Dawn, built `Mar 28 2005` | `config/target.json` |
+| **the module map is published** | 25 source paths in 11 libraries | `config/boot/modules.tsv` |
+| **the code's idioms are measured** | 888 485 instructions, 16-byte stack slots, no `$gp`, no debug-C idiom | `config/boot/idioms.json` |
+| **the layout is established** | 240 targets reviewed, 240 confirmed as functions, 15 named | `config/boot/layout.tsv` |
 | the readers are tested | synthetic fixtures, no game data in the tests | `tests/test_tools.py` |
 
 ### The decryption
@@ -32,10 +36,6 @@ repository, in Python, from the published description of the format:
 python3 tools/decrypt_psp.py <EBOOT.BIN> <decrypted.elf>
 python3 tools/boot_inventory.py --elf <decrypted.elf> --out config
 ```
-
-The key material is in `tools/psp_crypto.py`; its provenance is in
-`THIRD_PARTY_NOTICES.md`. The decrypted ELF is **never committed**: only the
-structure it yields is.
 
 Two independent things confirm that the decryption is right, and neither of
 them is "it looks like code":
@@ -56,9 +56,24 @@ them is "it looks like code":
 * **one monolithic object**: 3 335 156 bytes of `.text` in a single
   segment, against the forty-eight packed level overlays of the PlayStation
   2 games of the same studio;
-* `BOOT.BIN` is **entirely zeroed** and exactly the size of the
-  decrypted ELF: it is the buffer the firmware decrypts into, not another
-  version of the program.
+* **not position independent**: no `$gp` at all, every global reached
+  through an absolute address, `.text` linked at `0x00000000`;
+* `BOOT.BIN` is **entirely zeroed** and exactly the size of the decrypted
+  ELF: it is the buffer the firmware decrypts into, not another version of
+  the program.
+
+### What wave 1 established
+
+Six lots of forty targets, each verified against the code: **240 targets,
+240 confirmed as functions, none rejected, none left unknown**, and
+**fifteen names** recovered with evidence.
+
+The sweep that produced the hypotheses got **93,3 %** of the reviewed
+bounds right. The sixteen it got wrong are the price of a linear sweep:
+thirteen bodies it over-extended into the following function, and two it
+cut at the first return when the body carries a cold path after its
+epilogue. The sweep was corrected and the lots of the next wave were cut
+with the corrected rule. See `docs/LAYOUT.md`.
 
 ---
 
@@ -66,46 +81,56 @@ them is "it looks like code":
 
 | Item | Why it is blocked |
 | --- | --- |
-| the layout of the code | the function boundaries are not known yet |
+| the layout of the whole code | only 240 of the 11 452 called candidates have been reviewed; the lots L07 to L12 are cut and waiting |
 | the toolchain profile | needs a layout and a sample body |
 | the first matched body | needs the two above |
-| the names of the functions | the symbol table is empty; the names have to come from the code, from the strings, or from the sibling PS2 games |
+| most of the names | the symbol table is empty; the names have to come from the strings, the assert mechanism, or nowhere |
 
 ---
 
 ## The open questions, in the order they block the work
 
-1. **Which of the 14 655 frame openings are functions?** This is the
-   assembly baseline the method calls for, and it is the whole of the next
-   phase. A frame is not a function: the review has to establish, for each
-   candidate, that it is entered from a call, that it returns, and where it
-   ends.
+1. **The assert mechanism is the naming lever, and it is only half
+   resolved.** The engine's assert helper at `0x7035C` takes the name of
+   the enclosing function in `$a3` — the C `__FUNCTION__` — and the target
+   has **344** call sites of it. The argument is built by a `lui` before
+   the call and an `addiu` **in the delay slot of the call**; the
+   identifiers live in a string pool that starts at `0x00340000`.
+   `tools/assert_names.py` resolves the direct form of the pattern; the
+   sites whose argument comes from further away do not resolve yet. Lot
+   L01 got 158 of the 344 by hand, and 63 distinct names out of them.
+   **Resolving all of them would name a large part of the engine.**
 2. **Which toolchain can reproduce the retail bytes?** Nothing is assumed
-   here; see `config/toolchain.json`. The candidates are the Allegrex GCC
-   and the PSPSDK toolchain.
-3. **Where do the names come from?** The PS2 games of the same studio share
-   the engine and most of the engine's function names: `GLOBAL_GetFlagBit`,
-   `LEVEL_RequestRestart`, `TEXMGR_GetWidth`, `AglSubMeshMgr` and the
-   rest. `OpenRAC/rac-sac-decomp` already has a catalogue of them for
-   *Secret Agent Clank*, which is the same engine on the same processor.
-   That is a large, legitimate head start, and it has to be **proved**
-   against this target rather than assumed.
-4. **The disc key.** The `PSAR` archive of the firmware updater stays
-   unreadable without it, and it is the only thing left on the disc that
-   the readers cannot reach.
+   here; see `config/toolchain.json`. What *is* measured is the shape of
+   the code: 16-byte stack slots with the return address on top of the
+   frame, no `$gp`, and **no** GCC debug-C equality idiom — the last
+   being a measured difference from the PlayStation 2 Ratchet & Clank boot
+   build, which does carry it.
+3. **The sibling catalogue does not apply.** Lot L01 checked the 137
+   bodies `OpenRAC/rac-sac-decomp` has named and found no overlap: that
+   catalogue is of a different build, of a different engine generation.
+   It is a source of hypotheses, and every one of them has to be checked
+   against this target.
 
 ---
 
 ## The next concrete step
 
-> Take the first hundred candidates of `config/boot/functions.tsv`, and
-> establish which of them are functions: entered from a call, returning
-> through `$ra`, bounded by a known terminator. Publish the result as the
-> first **assembly baseline** of the project, with the measured boundary of
-> each body.
+> **Two things, in this order.**
 
-That is the phase the sibling projects call *layout*, and it is what turns
-14 655 candidates into a work list.
+> 1. **Finish the assert resolver.** Take the 344 call sites of the
+>    helper at `0x7035C`, resolve the `$a3` argument in every form it
+>    takes — the direct literal, the pointer loaded from the string pool
+>    at `0x00340000`, the callee-saved register that carries it — and
+>    publish the names. This is the largest naming source the project
+>    has, and it is the code telling us its own names.
+>
+> 2. **Review the next lots.** L07 to L12 are cut and waiting: two
+>    hundred and forty more targets, with the corrected sweep. Same
+>    protocol, same deliverables.
+
+After those, the **toolchain** becomes the only thing left between the
+layout and the first matched body.
 
 ---
 
@@ -118,8 +143,15 @@ That is the phase the sibling projects call *layout*, and it is what turns
 | blobs in those containers | 19 255 |
 | code objects | 1 |
 | bytes of code (`.text`) | 3 335 156 |
+| instructions | 888 485 |
+| source modules identified | 25, in 11 libraries |
+| call targets | 11 497 |
+| bounded candidates | 19 062 |
 | function candidates | 14 655 |
-| of which saving the return address | 8 794 |
+| of which saving the return address | 13 494 |
+| **targets reviewed** | **240** |
+| **confirmed as functions** | **240** |
+| **names recovered** | **15** |
+| assert call sites | 344 |
 | functions matched | 0 |
-| functions named | 0 |
 | gates passed | 1 of 4 |

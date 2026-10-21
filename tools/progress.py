@@ -54,6 +54,11 @@ def snapshot() -> dict[str, object]:
     decrypted = bool(executable.get("decrypted_sha256"))
     code = target.get("code", {})
 
+    layout = {}
+    layout_path = ROOT / "config" / "boot" / "layout_summary.json"
+    if layout_path.is_file():
+        layout = json.loads(layout_path.read_text(encoding="utf-8"))
+
     return {
         "target": target.get("game"),
         "title_id": target.get("title_id"),
@@ -66,6 +71,10 @@ def snapshot() -> dict[str, object]:
         "executable_decrypted": decrypted,
         "function_candidates": code.get("function_candidates", 0),
         "functions_saving_ra": code.get("functions_saving_ra", 0),
+        "targets_reviewed": layout.get("reviewed", 0),
+        "confirmed_functions": layout.get("class_counts", {}).get("function", 0),
+        "names_recovered": layout.get("named", 0),
+        "sweep_agreement_rate": layout.get("sweep_agreement_rate"),
         "proved_bodies": len(bodies),
         "parked_attempts": len(parked),
         "functions_matched": 0,

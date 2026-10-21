@@ -112,9 +112,15 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
                 returns.add(index)
 
     # --- the function starts ---------------------------------------------
-    # A start is a call target, the instruction that follows a return, or
-    # a place that opens a frame.  A branch target on its own is not: a
-    # loop header is not a function.
+    # A **strong** start is a call target or a place that opens a frame.
+    # Both of them begin a body, and a body runs from there to its last
+    # return before the next strong start.
+    #
+    # A place that merely *follows* a return is a **weak** signal: a body
+    # can have two epilogues, or a cold path after its epilogue, and the
+    # instruction after a return is then still inside the body. Using it
+    # as a start cuts those bodies at their first return, which is wrong.
+    # It is kept as evidence, not as a boundary.
     after_return: set[int] = set()
     for index in sorted(returns):
         following = index + 8
@@ -126,18 +132,21 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
         frame_openers.add(int(str(row["file_offset"]), 16) - offset)
 
     evidence: dict[int, set[str]] = defaultdict(set)
+    strong: set[int] = set()
     for target in call_sites:
         evidence[target].add("call")
+        strong.add(target)
     for index in after_return:
         evidence[vaddr + index].add("after_return")
     for index in frame_openers:
         evidence[vaddr + index].add("frame")
+        strong.add(vaddr + index)
 
     # --- the bodies ------------------------------------------------------
     # A call target *inside* a body that has not returned yet does not
     # split it: it is a call, not a new function.  A body therefore runs to
     # its last return before the next start that follows a return.
-    ordered = sorted(evidence)
+    ordered = sorted(strong)
     bodies: list[dict[str, object]] = []
     body_start: int | None = None
     body_evidence: set[str] = set()

@@ -78,9 +78,9 @@ candidates. The inventory now looks sixteen.
 
 ---
 
-## 3. The false-positive class
+## 3. The false-positive class, and the error of the sweep
 
-The sweep produces 20 889 candidates from three kinds of evidence:
+The sweep produces bounded candidates from three kinds of evidence:
 
 | Evidence | Bodies | What it is |
 | --- | --- | --- |
@@ -101,6 +101,38 @@ site, no frame — a **return path**, not a function.
 
 That is the one lesson the wave had to buy, and it is what the 1 827
 candidates of that class are worth.
+
+### The error the wave found in the sweep itself
+
+The sweep is a heuristic, and the review measured it. Two of its errors
+are now known:
+
+**The first return is not the last return.** The sweep originally closed a
+body at the return that came *before* the next start, and it treated the
+instruction after a return as a start. A body with **two epilogues** was
+therefore cut at its first one. Lot L06 found six such bodies — among them
+`0x0024F8BC`, `0x0024FC90` and `0x00266FF0`, each with a second return.
+The sweep now closes a body at its last return before the next **strong**
+start, where a strong start is a call target or a frame opening; the
+instruction after a return is kept as evidence, not as a boundary. That
+removes the error, and it removes 1 827 candidates of the suspect class
+from the sweep as well.
+
+**A cold path after the epilogue is still the body.** The sweep is a
+linear sweep, and it cannot see that a block placed *after* the epilogue
+is still reachable from the body: `0x00258524` runs a 64-bit
+multiplication to `0x258898`, well past the return at `0x2585F4`, and
+`0x00258BA4` returns through a jump to `0x258BFC`. Those bounds need the
+control-flow graph, not a linear pass.
+
+> **The sweep proposes; the review proves.** The residual error rate is
+> the price of the method, and it is measured and published rather than
+> hidden: `config/boot/layout_summary.json` reports how many reviewed
+> bounds the sweep got right.
+
+The bounds that the review corrected are the ones the next wave's sweep
+has to get right from the start, so the sweep was fixed and the lots of
+the next wave — L07 to L12 — were cut with the corrected rule.
 
 ---
 
@@ -144,7 +176,7 @@ configurations: that is what the toolchain phase has to explain.
 
 ## 6. Where the names come from
 
-The executable is stripped, so the names have to be earned. Four sources
+The executable is stripped, so the names have to be earned. Five sources
 produced names in the first wave:
 
 1. **The strings the body references.** 438 functions of the binary
@@ -157,19 +189,29 @@ produced names in the first wave:
 3. **The well-known algorithms.** A body that twists 227 and 623 elements
    over a state of 624 words, with the constants `0x9908B0DF`,
    `0x9D2C5680` and `0xEFC60000`, is `mt19937_genrand` and nothing else.
-4. **The sibling projects.** `OpenRAC/rac-sac-decomp` has already named
-   137 bodies of the **same engine on the same processor**. On the
-   hundred and sixty targets of wave 1, **none** of them matched: the
-   catalogue is a source of *hypotheses*, not of proof, and it has to be
-   checked against this target.
+4. **The engine's own assert mechanism.** The helper at `0x7035C` takes
+   the name of the enclosing function in `$a3` — the C `__FUNCTION__` —
+   and the target has **344** call sites of it. This is the largest
+   naming source there is: the code is telling us its own names. The
+   argument is built by a `lui` before the call and an `addiu` **in the
+   delay slot of the call**, and the identifiers live in a string pool
+   that starts at `0x00340000`. `tools/assert_names.py` resolves the
+   direct form of that pattern; the rest is an open item.
+5. **The sibling projects.** `OpenRAC/rac-sac-decomp` has already named
+   137 bodies of a Ratchet & Clank title. On the two hundred and forty
+   targets of wave 1, **none** of them matched, and lot L01 established
+   why: the catalogue is of a different build, of a different engine
+   generation. It is a source of *hypotheses*, not of proof, and it has
+   to be checked against this target.
 
 The names found in wave 1:
 
 | Address | Name | Confidence |
 | --- | --- | --- |
-| `0x0007044C` | `Aurora_GetErrorMessage` | high |
 | `0x00070A04` | `memcpy` | high |
+| `0x0007044C` | `Aurora_GetErrorMessage` | high |
 | `0x0008DFB8` | `mt19937_genrand` | high |
+| `0x00245504` | `strcmp` | high |
 | `0x0005D884` | `CNodeXD_CFileCm` | medium |
 | `0x00097A34` | `CFile_ResolvePath` | medium |
 | `0x000981C0` | `CFile_GetPath` | medium |
@@ -179,6 +221,8 @@ The names found in wave 1:
 | `0x001995A0` | `vehicle_mount_update` | medium |
 | `0x00199B54` | `vehicle_motion_update` | medium |
 | `0x001A06C8` | `enemy_ai_update` | medium |
+| `0x0024F8BC` | `Math_RegisterAcosf` | medium |
+| `0x0024FC90` | `Math_RegisterFmodf` | medium |
 
 Everything else kept `func_<address>`. That is not a failure: it is the
 answer the evidence gives.
