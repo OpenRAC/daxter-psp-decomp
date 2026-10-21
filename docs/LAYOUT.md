@@ -255,25 +255,58 @@ produced names in the first wave:
    generation. It is a source of *hypotheses*, not of proof, and it has
    to be checked against this target.
 
-The names found in wave 1:
+The names found by the wave, and the naming pass that followed it.  The table is the published one: `config/boot/layout.tsv`.
 
 | Address | Name | Confidence |
 | --- | --- | --- |
-| `0x00070A04` | `memcpy` | high |
+| `0x000149A0` | `random_float01` | high |
+| `0x000238D0` | `property_get_int` | medium |
+| `0x00023970` | `property_get_int` | medium |
+| `0x00023A10` | `property_get_float` | medium |
+| `0x00023C50` | `property_get_point` | medium |
+| `0x00023D9C` | `property_get_ushort` | medium |
+| `0x0005D884` | `SetupPhysicsFromFileCm` | high |
+| `0x00070330` | `Aurora_Printf` | medium |
 | `0x0007044C` | `Aurora_GetErrorMessage` | high |
+| `0x00070A04` | `memcpy` | high |
+| `0x00071198` | `MemAlloc` | medium |
+| `0x000711D0` | `MemFree` | medium |
+| `0x000711EC` | `MemFree` | medium |
+| `0x0008D8AC` | `quaternion_slerp` | high |
 | `0x0008DFB8` | `mt19937_genrand` | high |
-| `0x00245504` | `strcmp` | high |
-| `0x0005D884` | `CNodeXD_CFileCm` | medium |
 | `0x00097A34` | `CFile_ResolvePath` | medium |
 | `0x000981C0` | `CFile_GetPath` | medium |
-| `0x00099010` | `CFile_Close` | medium |
+| `0x00099010` | `~CFile` | high |
+| `0x000A4A7C` | `flag_test` | low |
+| `0x000DDFF8` | `entity_health_update` | low |
+| `0x0011DEA8` | `buffer_get_byte` | medium |
+| `0x0011DF4C` | `buffer_set_byte` | medium |
+| `0x00133428` | `vector_push_back` | medium |
+| `0x0013345C` | `bitmask_test` | medium |
+| `0x0013BBEC` | `camera_params_load` | medium |
 | `0x0013C1C4` | `timeline_update` | medium |
 | `0x00168028` | `format_indexed_name` | medium |
 | `0x001995A0` | `vehicle_mount_update` | medium |
 | `0x00199B54` | `vehicle_motion_update` | medium |
 | `0x001A06C8` | `enemy_ai_update` | medium |
+| `0x001B74D8` | `role_load` | medium |
+| `0x00244380` | `Charset_Convert` | medium |
+| `0x00245504` | `strcmp` | high |
+| `0x0024557C` | `strlen` | high |
 | `0x0024F8BC` | `Math_RegisterAcosf` | medium |
+| `0x0024FB2C` | `Math_RegisterAtan2f` | medium |
 | `0x0024FC90` | `Math_RegisterFmodf` | medium |
+| `0x0024FE28` | `Math_RegisterPowf` | medium |
+| `0x0025757C` | `__udivdi3` | medium |
+| `0x0025DE3C` | `SCREAM_ReportError` | medium |
+| `0x00266E94` | `SCREAM_LockMasterTick` | medium |
+| `0x0026768C` | `LockVoiceAllocator` | medium |
+| `0x00267800` | `UnlockVoiceAllocator` | high |
+| `0x0026B500` | `VAlloc_Release` | medium |
+| `0x0026B580` | `VAlloc_Alloc` | medium |
+| `0x0026B610` | `VAlloc_Init` | medium |
+| `0x00274C18` | `vsprintf` | medium |
+| `0x002859B0` | `align_down_512` | high |
 
 Everything else kept `func_<address>`. That is not a failure: it is the
 answer the evidence gives.

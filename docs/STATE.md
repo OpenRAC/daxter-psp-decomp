@@ -23,7 +23,7 @@ No function has been matched.
 | **the build is identified** | engine SCREAM, object layer Aurora, port by Ready At Dawn, built `Mar 28 2005` | `config/target.json` |
 | **the module map is published** | 25 source paths in 11 libraries | `config/boot/modules.tsv` |
 | **the code's idioms are measured** | 888 485 instructions, 16-byte stack slots, no `$gp`, no debug-C idiom | `config/boot/idioms.json` |
-| **the layout is established** | 240 targets reviewed, 240 confirmed as functions, 15 named | `config/boot/layout.tsv` |
+| **the layout is established** | 421 targets reviewed, 421 confirmed as functions, 48 named | `config/boot/layout.tsv` |
 | the readers are tested | synthetic fixtures, no game data in the tests | `tests/test_tools.py` |
 
 ### The decryption
@@ -62,18 +62,29 @@ them is "it looks like code":
   ELF: it is the buffer the firmware decrypts into, not another version of
   the program.
 
-### What wave 1 established
+### What wave 2 established
 
-Six lots of forty targets, each verified against the code: **240 targets,
-240 confirmed as functions, none rejected, none left unknown**, and
-**fifteen names** recovered with evidence.
+Fourteen lots of forty targets, each verified against the code, and the
+sweep corrected to follow the control-flow graph.
 
-The sweep that produced the hypotheses got **93,3 %** of the reviewed
-bounds right. The sixteen it got wrong are the price of a linear sweep:
-thirteen bodies it over-extended into the following function, and two it
-cut at the first return when the body carries a cold path after its
-epilogue. The sweep was corrected and the lots of the next wave were cut
-with the corrected rule. See `docs/LAYOUT.md`.
+**421 distinct bodies reviewed. 421 confirmed as functions. None rejected,
+none left unknown. 48 names recovered with evidence**, three of them
+correcting a name of wave 1.
+
+The sweep now agrees with the review on **99,1 %** of the bodies, against
+93,3 % before. The rule it implements is the one the review measured: *a
+body ends at the last instruction its control-flow graph reaches, plus
+four*. The residual error is the last class — a computed jump through a
+register, whose targets are in a table the graph does not read.
+
+The wave also bought the naming mechanism: the engine's assert helper at
+`0x7035C` takes the name of the enclosing function in `$a3` — the C
+`__FUNCTION__` — and the target has **344** call sites of it. 339 resolve,
+into 73 distinct names over 82 bodies.
+
+And it said what does not pay: the two hundred and fifteen bodies that
+keep their address are methods of game classes whose class name appears
+nowhere. There is no RTTI. Naming them would be inventing.
 
 ---
 
@@ -81,36 +92,60 @@ with the corrected rule. See `docs/LAYOUT.md`.
 
 | Item | Why it is blocked |
 | --- | --- |
-| the layout of the whole code | only 240 of the 11 452 called candidates have been reviewed; the lots L07 to L12 are cut and waiting |
+| the layout of the whole code | 421 of the 11 452 called candidates have been reviewed; the lots L15 to L24 are cut and waiting |
 | the toolchain profile | needs a layout and a sample body |
 | the first matched body | needs the two above |
-| most of the names | the symbol table is empty; the names have to come from the strings, the assert mechanism, or nowhere |
+| most of the names | the symbol table is empty, and the class names of the game objects are nowhere in the binary |
 
 ---
 
 ## The open questions, in the order they block the work
 
-1. **The assert mechanism is the naming lever, and it is only half
-   resolved.** The engine's assert helper at `0x7035C` takes the name of
-   the enclosing function in `$a3` — the C `__FUNCTION__` — and the target
-   has **344** call sites of it. The argument is built by a `lui` before
-   the call and an `addiu` **in the delay slot of the call**; the
-   identifiers live in a string pool that starts at `0x00340000`.
-   `tools/assert_names.py` resolves the direct form of the pattern; the
-   sites whose argument comes from further away do not resolve yet. Lot
-   L01 got 158 of the 344 by hand, and 63 distinct names out of them.
-   **Resolving all of them would name a large part of the engine.**
-2. **Which toolchain can reproduce the retail bytes?** Nothing is assumed
-   here; see `config/toolchain.json`. What *is* measured is the shape of
-   the code: 16-byte stack slots with the return address on top of the
-   frame, no `$gp`, and **no** GCC debug-C equality idiom — the last
+1. **The toolchain.** Nothing is assumed about which compiler built the
+   retail bytes; see `config/toolchain.json`. What *is* measured is the
+   shape of the code: 16-byte stack slots with the return address on top of
+   the frame, no `$gp`, and **no** GCC debug-C equality idiom — the last
    being a measured difference from the PlayStation 2 Ratchet & Clank boot
-   build, which does carry it.
-3. **The sibling catalogue does not apply.** Lot L01 checked the 137
-   bodies `OpenRAC/rac-sac-decomp` has named and found no overlap: that
-   catalogue is of a different build, of a different engine generation.
-   It is a source of hypotheses, and every one of them has to be checked
-   against this target.
+   build, which does carry it. The PSPSDK Allegrex toolchain is a GCC 3.3
+   lineage. This is the last obstacle between the layout and the first
+   matched body.
+2. **The last error class of the sweep.** The four bodies the control-flow
+   graph still gets wrong end at a **computed jump** through a register,
+   whose targets are in a table the graph does not read. The graph has to
+   read the table.
+3. **The class names of the game objects.** There is no RTTI, and the
+   names of the game classes are nowhere in the binary. The two hundred and
+   fifteen bodies that keep their address are methods of those classes.
+   The sibling projects cannot help — their catalogue is of a different
+   build, of a different engine generation — and a name without evidence
+   would be a lie in the source.
+
+---
+
+## The next concrete step
+
+> **The toolchain, and the rest of the layout.**
+
+> 1. **Qualify the compiler.** The decisive test is the **`strcmp` of the
+>    retail code at `0x00245504`**: its behaviour is known — it compares
+>    the bytes of two strings and returns the difference of the first
+>    differing bytes, with a *signed* comparison. That is a known idiom,
+>    and the exact shape of the code is a fingerprint of the compiler and
+>    the library it was built against. Compile the equivalent with each
+>    candidate toolchain and compare the **shape**: the frame size, the
+>    slot width, what the delay slot holds, the form of the comparison.
+>    `tools/harness.py` is the tool that will compare the bytes when the
+>    shape is right.
+>
+> 2. **Review the lots L15 to L24.** They are cut, with the bodies of the
+>    previous waves left out: four hundred more targets, same protocol.
+>
+> 3. **Read the jump tables** in the control-flow graph, so that the last
+>    error class of the sweep disappears.
+
+After those, the **body gate** is reachable: the layout is there, the
+harness is there, and only the compiler stands between the project and its
+first matched body.
 
 ---
 
@@ -146,12 +181,14 @@ layout and the first matched body.
 | instructions | 888 485 |
 | source modules identified | 25, in 11 libraries |
 | call targets | 11 497 |
+| virtual calls (`jalr`) | 6 070 |
 | bounded candidates | 19 062 |
 | function candidates | 14 655 |
 | of which saving the return address | 13 494 |
-| **targets reviewed** | **240** |
-| **confirmed as functions** | **240** |
-| **names recovered** | **15** |
-| assert call sites | 344 |
+| **targets reviewed** | **421** |
+| **confirmed as functions** | **421** |
+| **names recovered** | **48** |
+| assert call sites | 344, of which 339 resolve |
+| distinct names from the asserts | 73 |
 | functions matched | 0 |
 | gates passed | 1 of 4 |
