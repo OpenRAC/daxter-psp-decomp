@@ -16,7 +16,7 @@ The method
 ----------
 
 The retail executable is stripped, so the boundaries have to be recovered
-from the code.  Three observations are used, and each of them is recorded
+from the code.  Four observations are used, and each of them is recorded
 as the *evidence* of the candidate:
 
 1. **A call names a function.**  Every ``jal`` target is the start of a
@@ -25,6 +25,11 @@ as the *evidence* of the candidate:
    The body of a function ends at its *last* return, not its first.
 3. **A function often starts right after a return.**  In stripped code the
    next function usually follows the previous one's epilogue.
+4. **A jump through a register can be read.**  The code of a switch
+   computes the address of a **table** with ``lui``/``addu``/``lw``, masks
+   the index with ``andi`` or checks it with ``sltiu``, and jumps through
+   the register the table gave it.  The graph reads the table, so the
+   cases of the switch belong to the body they are part of.
 
 A candidate is therefore a function start that is a call target, or that
 follows a return, or that opens a frame; and its body runs to the last
@@ -62,14 +67,46 @@ FUNCT_JR = 0x08
 FUNCT_JALR = 0x09
 OP_ADDiu_SP = 0x27BD0000    # addiu $sp, $sp, imm
 
-#: The conditional branches, and the *likely* forms of them.  The likely
-#: branches execute their delay slot whatever the condition is.
+#: The conditional branches, and the *likely* forms of them.  The graph
+#: absorbs the delay slot of a branch whatever the condition is: the
+#: instruction belongs to the body either way.
 CONDITIONAL = {0x04, 0x05, 0x06, 0x07, 0x14, 0x15, 0x16, 0x17}
 #: The REGIMM family: bltz, bgez, and their likely forms.
 REGIMM = {0x01}
 
 REG_RA = 31
 REG_T9 = 25
+REG_ZERO = 0
+
+#: The loadable segments of the executable, and their permissions.
+PT_LOAD = 1
+PF_X = 1
+PF_W = 2
+
+#: The instructions the resolver of the jump tables reads.
+OP_ADDIU = 0x09
+OP_SLTI = 0x0A
+OP_SLTIU = 0x0B
+OP_ANDI = 0x0C
+OP_ORI = 0x0D
+OP_LUI = 0x0F
+OP_LW = 0x23
+
+FUNCT_SLL = 0x00
+FUNCT_ADDU = 0x21
+FUNCT_SUBU = 0x23
+FUNCT_OR = 0x25
+
+#: How many instructions the resolver looks back for the definition of a
+#: register.  The pattern of a switch is five instructions long; the
+#: window is wide enough for the range check that gives the count.
+RESOLVE_WINDOW = 64
+#: How many instructions the resolver looks back for the range check of
+#: the index.  The check sits before the branch that leaves the switch.
+BOUND_WINDOW = 48
+#: The largest table the resolver accepts.  A table of ten thousand cases
+#: is not a switch, it is a mistake.
+MAX_CASES = 4096
 
 
 def _is_conditional(word: int) -> bool:
@@ -84,11 +121,15 @@ def _is_conditional(word: int) -> bool:
 
 
 def _is_jump(word: int) -> bool:
-    """Return True for the unconditional jumps and the returns."""
+    """Return True for the unconditional jumps and the returns.
+
+    The main opcodes: 0x02 is ``j``, 0x03 is ``jal``.  Beware of the
+    neighbours: 0x08 is ``addi`` and 0x0C is ``andi``, and a graph that
+    mistakes them for a jump and for a call loses a great deal of the
+    code.
+    """
     opcode = word >> 26
-    if opcode == 0x08:                    # j
-        return True
-    if opcode == 0x0C:                    # jal target
+    if opcode == 0x02:                    # j
         return True
     if (word & 0xFC000000) == OP_SPECIAL:
         funct = word & 0x3F
@@ -107,8 +148,13 @@ def _is_return(word: int) -> bool:
 
 
 def _is_call(word: int) -> bool:
-    """Return True for a call: the control leaves and comes back."""
-    if (word >> 26) == 0x0C:
+    """Return True for a call: the control leaves and comes back.
+
+    ``jal`` is the main opcode 0x03.  The opcode 0x0C is ``andi``, which
+    is not a call, and the mask 0xFC000000 has to be applied to the whole
+    word for the comparison to mean anything.
+    """
+    if (word >> 26) == 0x03:
         return True
     if (word & 0xFC000000) == OP_SPECIAL and (word & 0x3F) == FUNCT_JALR:
         return True
@@ -130,7 +176,474 @@ def _branch_target(word: int, pc: int) -> int | None:
     return None
 
 
-def body_reachable(segment: bytes, start_index: int, limit_index: int) -> set[int]:
+# --- the image ------------------------------------------------------------
+#
+# The tables of the switches live in the data of the executable, and the
+# mapping between a virtual address and the file is read from the program
+# headers of the executable, never from a table of our own.  On the
+# pinned target the code segment is at the file offset 0x74 and the data
+# segment at 0x363B08, so a data address is ``file offset - 0x70`` and a
+# code address ``file offset - 0x74``.
+
+def _loadable_segments(data: bytes) -> list[tuple[int, int, int, int]]:
+    """Return the (file offset, size, virtual address, flags) of the segments."""
+    if data[:4] != b"\x7fELF":
+        raise ValueError("not an ELF")
+    header = struct.unpack_from("<HHIIIIIHHHHHH", data, 16)
+    phoff, phentsize, phnum = header[4], header[8], header[9]
+    segments: list[tuple[int, int, int, int]] = []
+    for index in range(phnum):
+        base = phoff + index * phentsize
+        ptype, offset, vaddr, _paddr, filesz, _memsz, flags, _align = \
+            struct.unpack_from("<IIIIIIII", data, base)
+        if ptype == PT_LOAD and filesz:
+            segments.append((offset, filesz, vaddr, flags))
+    return segments
+
+
+class Image:
+    """The segments of the executable, and the words they hold."""
+
+    def __init__(self, data: bytes) -> None:
+        self.data = data
+        self.segments = _loadable_segments(data)
+        self.code = next((seg for seg in self.segments if seg[3] & PF_X), None)
+
+    def segment_of(self, va: int) -> tuple[int, int, int, int] | None:
+        for segment in self.segments:
+            _offset, size, vaddr, _flags = segment
+            if vaddr <= va < vaddr + size:
+                return segment
+        return None
+
+    def word(self, va: int) -> int | None:
+        """Return the word at a virtual address, if the image holds one."""
+        segment = self.segment_of(va)
+        if segment is None:
+            return None
+        offset, _size, vaddr, _flags = segment
+        return struct.unpack_from("<I", self.data, offset + (va - vaddr))[0]
+
+    def is_code(self, va: int) -> bool:
+        """Return True for an address that can hold an instruction."""
+        if self.code is None or va == REG_ZERO:
+            return False
+        _offset, size, vaddr, _flags = self.code
+        return vaddr <= va < vaddr + size and (va - vaddr) % 4 == 0
+
+
+# --- the resolver of the jump tables --------------------------------------
+#
+# The abstract value of a register.  The graph does not need the value of
+# a register, only the *shape* of the address it computes:
+#
+#   None                       the value is unknown
+#   ("const", v)               the value is the constant v
+#   ("plus", r, k, at)         the value is the value of register r, plus
+#                              k, an adjustment made at `at`
+#   ("and", r, m)              the value is the value of register r, masked
+#   ("scaled", b, s, r, k, at) the value is b + s * (the value of r, plus k)
+#   ("mem", inner)             the value is the word at the address `inner`
+#
+# A jump table is the shape that matters: an address made of a constant
+# base plus four times an index, read from a word.
+
+def _v_add(value, delta):
+    if value is None:
+        return None
+    kind = value[0]
+    if kind == "const":
+        return ("const", (value[1] + delta) & 0xFFFFFFFF)
+    if kind == "plus":
+        return ("plus", value[1], value[2] + delta, value[3])
+    if kind == "scaled":
+        return ("scaled", (value[1] + delta) & 0xFFFFFFFF,
+                value[2], value[3], value[4], value[5])
+    if kind == "mem":
+        return ("mem", _v_add(value[1], delta))
+    return None
+
+
+def _v_scale(value, shift):
+    """The value of a register shifted left by `shift`."""
+    if value is None:
+        return None
+    kind = value[0]
+    if kind == "const":
+        return ("const", (value[1] << shift) & 0xFFFFFFFF)
+    if kind == "plus":
+        return ("scaled", 0, 1 << shift, value[1], value[2], value[3])
+    if kind == "and":
+        return ("scaled", 0, 1 << shift, value[1], 0, 0)
+    if kind == "scaled":
+        base, scale, reg, adj, at = value[1], value[2], value[3], value[4], value[5]
+        if base % (1 << shift):
+            return None
+        return ("scaled", base << shift, scale << shift, reg, adj, at)
+    return None
+
+
+def _v_plus(left, right):
+    if left is None or right is None:
+        return None
+    lkind, rkind = left[0], right[0]
+    if lkind == "const" and rkind == "const":
+        return ("const", (left[1] + right[1]) & 0xFFFFFFFF)
+    if lkind == "const":
+        return _v_plus(right, left)
+    if rkind == "const":
+        if lkind == "plus":
+            return ("plus", left[1], left[2] + right[1], left[3])
+        if lkind == "scaled":
+            return ("scaled", (left[1] + right[1]) & 0xFFFFFFFF,
+                    left[2], left[3], left[4], left[5])
+        return None
+    if lkind == "plus" and rkind == "plus":
+        if left[1] == right[1]:
+            return ("plus", left[1], left[2] + right[2], left[3])
+        return None
+    if lkind == "scaled" and rkind == "scaled":
+        if left[3] == right[3] and left[2] == right[2] and left[4] == right[4]:
+            return ("scaled", (left[1] + right[1]) & 0xFFFFFFFF,
+                    left[2], left[3], left[4], left[5])
+        return None
+    return None
+
+
+def _v_minus(left, right):
+    if left is None or right is None:
+        return None
+    lkind, rkind = left[0], right[0]
+    if lkind == "const" and rkind == "const":
+        return ("const", (left[1] - right[1]) & 0xFFFFFFFF)
+    if rkind == "const":
+        if lkind == "plus":
+            return ("plus", left[1], left[2] - right[1], left[3])
+        if lkind == "scaled":
+            return ("scaled", (left[1] - right[1]) & 0xFFFFFFFF,
+                    left[2], left[3], left[4], left[5])
+    return None
+
+
+class Dispatch:
+    """A table of targets the code computes, and jumps through."""
+
+    __slots__ = ("address", "table", "cases", "count", "source")
+
+    def __init__(self, address: int, table: int, cases: list[int],
+                 count: int, source: str) -> None:
+        self.address = address      # the address of the jump itself
+        self.table = table          # the address of the table
+        self.cases = cases          # the address of every case
+        self.count = count          # the number of cases
+        self.source = source        # where the count was read
+
+
+class Resolver:
+    """The jump tables the code computes.
+
+    The resolver reads a ``jr`` and the few instructions before it, and
+    tells whether the jump goes through a **table** it can name.  When it
+    cannot, it says so, and the graph keeps the old behaviour: the path
+    ends at the jump, and the body stays provisional.
+    """
+
+    def __init__(self, image: Image, segment: bytes, vaddr: int) -> None:
+        self.image = image
+        self.segment = segment
+        self.vaddr = vaddr
+        self.cache: dict[int, Dispatch | None] = {}
+        self.found = 0        # the jumps through a register the graph met
+        self.resolved = 0     # the tables the resolver read
+        self._values: dict[tuple[str, int, int], object] = {}
+        self._runs: dict[int, int] = {}
+
+    # --- the decoding ----------------------------------------------------
+
+    def _word(self, va: int) -> int:
+        return struct.unpack_from("<I", self.segment, va - self.vaddr)[0]
+
+    @staticmethod
+    def _rs(word: int) -> int:
+        return (word >> 21) & 0x1F
+
+    @staticmethod
+    def _rt(word: int) -> int:
+        return (word >> 16) & 0x1F
+
+    @staticmethod
+    def _sa(word: int) -> int:
+        return (word >> 6) & 0x1F
+
+    @staticmethod
+    def _imm(word: int) -> int:
+        value = word & 0xFFFF
+        return value - 0x10000 if value & 0x8000 else value
+
+    @staticmethod
+    def _dest(word: int) -> int | None:
+        """Return the register the instruction writes, if it writes one."""
+        opcode = word >> 26
+        if opcode == 0:
+            funct = word & 0x3F
+            if funct in (0x00, 0x02, 0x03, 0x04, 0x06, 0x07, 0x10, 0x12,
+                         0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+                         0x2A, 0x2B):
+                return (word >> 11) & 0x1F
+            if funct == FUNCT_JALR:
+                return (word >> 11) & 0x1F or REG_RA
+            return None
+        if opcode in (OP_ADDIU, OP_SLTI, OP_SLTIU, OP_ANDI, OP_ORI, OP_LUI,
+                      OP_LW, 0x20, 0x24, 0x21, 0x25, 0x10):
+            return (word >> 16) & 0x1F
+        return None
+
+    @staticmethod
+    def _is_branch(word: int) -> bool:
+        opcode = word >> 26
+        if opcode in CONDITIONAL or opcode in REGIMM:
+            return True
+        if opcode == 0x11 and (word & 0x3F) in (0x08, 0x09, 0x0E, 0x0F):
+            return True
+        return False
+
+    @staticmethod
+    def _is_unconditional(word: int) -> bool:
+        opcode = word >> 26
+        if opcode == 0x08:
+            return True
+        if opcode in (0x04, 0x05) and ((word >> 21) & 0x1F) == 0 \
+                and ((word >> 16) & 0x1F) == 0:
+            return True
+        if opcode == 0x01 and ((word >> 16) & 0x1F) == 0:
+            return True
+        if opcode == 0 and (word & 0x3F) == FUNCT_JR:
+            return True
+        return False
+
+    @staticmethod
+    def _is_call(word: int) -> bool:
+        opcode = word >> 26
+        if opcode == 0x0C:
+            return True
+        return opcode == 0 and (word & 0x3F) == FUNCT_JALR
+
+    @staticmethod
+    def _is_likely(word: int) -> bool:
+        """Return True for a branch whose delay slot is nullified.
+
+        The *likely* branches of the Allegrex do not execute their delay
+        slot when the branch is not taken: the slot belongs to the path
+        the branch takes.  The code of the pinned target says so: the
+        dispatch of ``0x001D7E08`` reads the byte it just compared, and
+        the delay slot of the branch before it would have overwritten it.
+        """
+        opcode = word >> 26
+        if opcode in (0x14, 0x15, 0x16, 0x17):
+            return True
+        if opcode == 0x01 and ((word >> 16) & 0x1F) in (0x10, 0x11):
+            return True
+        return False
+
+    # --- the value of a register ----------------------------------------
+
+    def _value_after(self, va: int, reg: int, budget: int = RESOLVE_WINDOW):
+        """The value of a register after the instruction at `va`."""
+        if budget <= 0:
+            return ("plus", reg, 0, 0)
+        key = ("after", va, reg)
+        if key in self._values:
+            return self._values[key]
+        self._values[key] = None
+        if va < self.vaddr:
+            self._values[key] = ("plus", reg, 0, 0)
+            return self._values[key]
+        if reg == REG_ZERO:
+            self._values[key] = ("const", 0)
+            return self._values[key]
+        word = self._word(va)
+        nullified = False
+        if va - 4 >= self.vaddr:
+            nullified = self._is_likely(self._word(va - 4))
+        if self._dest(word) == reg and not nullified:
+            value = self._eval(va, word, reg, budget)
+        elif self._is_branch(word) or self._is_unconditional(word) \
+                or self._is_call(word):
+            # The value of the register past a transfer of the control is
+            # the value the register holds there: the shape is kept, the
+            # number is not known.
+            value = ("plus", reg, 0, 0)
+        else:
+            value = self._value_after(va - 4, reg, budget - 1)
+        self._values[key] = value
+        return value
+
+    def _source(self, va: int, reg: int, budget: int):
+        """The value of a register as the instruction at `va` reads it."""
+        if reg == REG_ZERO:
+            return ("const", 0)
+        return self._value_after(va - 4, reg, budget - 1)
+
+    def _eval(self, va: int, word: int, reg: int, budget: int):
+        opcode = word >> 26
+        if opcode == 0:
+            funct = word & 0x3F
+            if funct == FUNCT_SLL:
+                return _v_scale(self._source(va, self._rt(word), budget - 1),
+                                self._sa(word))
+            if funct == FUNCT_ADDU:
+                return _v_plus(self._source(va, self._rs(word), budget - 1),
+                               self._source(va, self._rt(word), budget - 1))
+            if funct == FUNCT_SUBU:
+                return _v_minus(self._source(va, self._rs(word), budget - 1),
+                                self._source(va, self._rt(word), budget - 1))
+            if funct == FUNCT_OR:
+                left = self._source(va, self._rs(word), budget - 1)
+                right = self._source(va, self._rt(word), budget - 1)
+                if right is not None and right[0] == "const" and right[1] == 0:
+                    return left
+                if left is not None and left[0] == "const" and left[1] == 0:
+                    return right
+                return None
+            return None
+        if opcode == OP_LUI:
+            return ("const", (word & 0xFFFF) << 16)
+        if opcode == OP_ADDIU:
+            base = self._source(va, self._rs(word), budget - 1)
+            if base is None:
+                return ("plus", self._rs(word), self._imm(word), va)
+            if base[0] == "plus" and base[2] == 0:
+                return ("plus", self._rs(word), self._imm(word), va)
+            return _v_add(base, self._imm(word))
+        if opcode == OP_ANDI:
+            base = self._source(va, self._rs(word), budget - 1)
+            if base is None or base[0] == "plus":
+                return ("and", self._rs(word), word & 0xFFFF)
+            if base[0] == "const":
+                return ("const", base[1] & (word & 0xFFFF))
+            return None
+        if opcode == OP_ORI:
+            base = self._source(va, self._rs(word), budget - 1)
+            if base is not None and base[0] == "const":
+                return ("const", base[1] | (word & 0xFFFF))
+            return None
+        if opcode == OP_LW:
+            return ("mem", _v_add(self._source(va, self._rs(word), budget - 1),
+                                  self._imm(word)))
+        return None
+
+    def _counts(self, va: int, reg: int, adj: int) -> list[tuple[int, str]]:
+        """The candidate counts of the table, in the order the code gives them.
+
+        The count of the cases is in the code, not in the data: the
+        compiler masks the index with ``andi`` or checks it with
+        ``sltiu`` before the table is read.  Two tables of a switch often
+        sit next to each other in the data, so the data alone cannot say
+        where a table ends.
+
+        The index the compiler uses is the raw value plus the adjustment
+        it made to it, so a check on the raw value gives the count of
+        the cases once the adjustment is added back.  Several checks can
+        guard the same index - the low bound and the high bound of a
+        range - so the candidates are given in the order the code reads
+        them, and the first one the data confirms is the one the graph
+        uses.
+        """
+        candidates: list[tuple[int, str]] = []
+        place = va
+        for _ in range(BOUND_WINDOW):
+            if place - 4 < self.vaddr:
+                break
+            word = self._word(place)
+            opcode = word >> 26
+            if opcode == OP_ANDI and self._rs(word) == reg:
+                candidates.append(((word & 0xFFFF) + 1 + adj, "andi"))
+            elif opcode == OP_SLTIU and self._rs(word) == reg:
+                candidates.append(((word & 0xFFFF) + adj, "sltiu"))
+            elif opcode == OP_SLTI and self._rs(word) == reg:
+                candidates.append((self._imm(word) + adj, "slti"))
+            if self._is_call(word) or self._is_unconditional(word):
+                break
+            place -= 4
+        return candidates
+
+    def _run(self, base: int) -> int:
+        """The number of code addresses the table holds, at least.
+
+        The data holds the cases of a table one after the other, and the
+        table of the next switch may follow immediately: the run of the
+        code addresses is therefore an upper bound of the count, and
+        never the count itself.
+        """
+        if base in self._runs:
+            return self._runs[base]
+        count = 0
+        while count < MAX_CASES:
+            word = self.image.word(base + 4 * count)
+            if word is None or not self.image.is_code(word):
+                break
+            count += 1
+        self._runs[base] = count
+        return count
+
+    # --- the dispatch ----------------------------------------------------
+
+    def dispatch(self, va: int) -> Dispatch | None:
+        """The table the jump at `va` computes, if it computes one."""
+        if va in self.cache:
+            return self.cache[va]
+        self.found += 1
+        result = self._resolve(va)
+        if result is not None:
+            self.resolved += 1
+        self.cache[va] = result
+        return result
+
+    def _resolve(self, va: int) -> Dispatch | None:
+        word = self._word(va)
+        if (word & 0xFC000000) != OP_SPECIAL or (word & 0x3F) != FUNCT_JR:
+            return None
+        reg = self._rs(word)
+        if reg in (REG_RA, REG_T9, REG_ZERO):
+            return None
+        value = self._value_after(va - 4, reg)
+        if value is None or value[0] != "mem":
+            return None
+        inner = value[1]
+        if inner is None or inner[0] != "scaled":
+            return None
+        base, scale, index, adj, _at = (inner[1], inner[2], inner[3],
+                                        inner[4], inner[5])
+        if scale != 4:
+            # A table of words is indexed by four.
+            return None
+        candidates = self._counts(va - 4, index, adj)
+        if not candidates:
+            # No range check: the number of cases cannot be measured, and
+            # the body stays provisional rather than guessed.
+            return None
+        run = self._run(base)
+        for count, source in candidates:
+            if not 1 <= count <= MAX_CASES or count > run:
+                continue
+            cases: list[int] = []
+            for step in range(count):
+                target = self.image.word(base + 4 * step)
+                if target is None or not self.image.is_code(target):
+                    # The table does not hold the address of a case: the
+                    # reading is wrong, and the body stays provisional.
+                    cases = []
+                    break
+                cases.append(target)
+            if not cases:
+                continue
+            return Dispatch(va, base, cases, count, source)
+        return None
+
+
+def body_reachable(segment: bytes, start_index: int, limit_index: int,
+                   resolver: Resolver | None = None,
+                   vaddr: int = 0) -> tuple[set[int], int]:
     """Return the instructions a body reaches, and no other.
 
     This is the control-flow graph of the body, and it is what the review
@@ -138,7 +651,7 @@ def body_reachable(segment: bytes, start_index: int, limit_index: int) -> set[in
 
         the body ends at the last instruction the graph reaches, plus four.
 
-    Three rules make the graph right, and each of them was bought by a
+    Four rules make the graph right, and each of them was bought by a
     review:
 
     * the **delay slot** of a branch or a jump is executed.  The successor
@@ -147,8 +660,13 @@ def body_reachable(segment: bytes, start_index: int, limit_index: int) -> set[in
       it, and the callee is not part of the body.
     * a **return** ends the path, and its delay slot is the last
       instruction of the body.
+    * a **jump through a register** ends the path, unless the code
+      computes a **table** of targets: then the cases of the table are
+      part of the body, and the ones that fall outside it are counted and
+      reported, never swallowed.
     """
     reachable: set[int] = set()
+    outside = 0
     pending = [start_index]
     while pending:
         index = pending.pop()
@@ -191,13 +709,33 @@ def body_reachable(segment: bytes, start_index: int, limit_index: int) -> set[in
             target = _branch_target(word, index)
             if target is not None:
                 pending.append(target)
+                continue
+            # A jump through a register.  The code may compute the
+            # address of a table and jump through what it reads there:
+            # then the cases are part of the body.
+            if resolver is None:
+                continue
+            dispatch = resolver.dispatch(vaddr + index)
+            if dispatch is None:
+                continue
+            for case in dispatch.cases:
+                case_index = case - vaddr
+                if start_index <= case_index < limit_index:
+                    pending.append(case_index)
+                else:
+                    # The table holds an address outside the body: the
+                    # body is not what we think it is.  It is counted and
+                    # reported, and the next function is not swallowed.
+                    outside += 1
             continue
 
         pending.append(index + 4)
-    return reachable
+    return reachable, outside
 
 
-def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+def analyse(data: bytes) -> tuple[list[dict[str, object]],
+                                  list[dict[str, object]], int,
+                                  dict[str, int]]:
     """Return the call graph and the bounded candidates of the executable."""
     ranges = function_inventory.executable_ranges(data)
     if not ranges:
@@ -205,6 +743,8 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
 
     offset, size, vaddr = ranges[0]
     segment = data[offset:offset + size]
+    image = Image(data)
+    resolver = Resolver(image, segment, vaddr)
 
     # --- the call graph -------------------------------------------------
     call_sites: dict[int, int] = defaultdict(int)
@@ -271,6 +811,9 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
     # reaches, plus four - the rule the review of wave 1 measured.
     ordered = sorted(strong)
     bodies: list[dict[str, object]] = []
+    outside_cases = 0
+    bodies_outside = 0
+    bodies_with_table = 0
     for position, start in enumerate(ordered):
         start_index = start - vaddr
         if start_index < 0 or start_index >= len(segment):
@@ -281,12 +824,14 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
         # has no return, and the bound moves on.
         limit_index = len(segment)
         reachable: set[int] = set()
+        outside = 0
         for attempt in range(4):
             if position + attempt + 1 < len(ordered):
                 candidate = ordered[position + attempt + 1] - vaddr
             else:
                 candidate = len(segment)
-            reachable = body_reachable(segment, start_index, candidate)
+            reachable, outside = body_reachable(segment, start_index, candidate,
+                                                resolver, vaddr)
             limit_index = candidate
             if candidate >= len(segment) or candidate not in reachable:
                 break
@@ -295,6 +840,9 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
         end_index = min(max(reachable) + 4, len(segment))
         if end_index <= start_index:
             continue
+        if outside:
+            outside_cases += outside
+            bodies_outside += 1
         evidence_here = evidence.get(start, set())
         bodies.append({
             "start": start,
@@ -313,7 +861,13 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
         {"address": target, "sites": count}
         for target, count in sorted(call_sites.items(), key=lambda kv: -kv[1])
     ]
-    return calls, bodies, virtual_calls
+    stats = {
+        "computed_jumps": resolver.found,
+        "tables_resolved": resolver.resolved,
+        "cases_outside": outside_cases,
+        "bodies_outside": bodies_outside,
+    }
+    return calls, bodies, virtual_calls, stats
 
 
 def write_calls(path: Path, calls: list[dict[str, object]]) -> None:
@@ -384,7 +938,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     data = args.elf.read_bytes()
-    calls, bodies, virtual_calls = analyse(data)
+    calls, bodies, virtual_calls, stats = analyse(data)
 
     write_calls(args.work / "E0" / "calls.tsv", calls)
     write_bounds(args.work / "E0" / "bounds.tsv", bodies)
@@ -431,6 +985,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"bounded candidates: {len(bodies)}")
     print(f"called candidates : {len(eligible)}")
     print(f"shortlist         : {len(shortlist)}")
+    print(f"computed jumps    : {stats['computed_jumps']}")
+    print(f"tables resolved   : {stats['tables_resolved']}")
+    print(f"cases outside     : {stats['cases_outside']}")
+    print(f"bodies outside    : {stats['bodies_outside']}")
     return 0
 
 
