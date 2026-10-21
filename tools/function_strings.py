@@ -31,10 +31,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import psp_elf  # noqa: E402
+import regflow  # noqa: E402
 
 #: The offsets of the two program headers, and the data segment's.
 CODE_SEGMENT = 0
 DATA_SEGMENT = 1
+
+#: The code segment of the target: it starts at the virtual address zero,
+#: and its file offset is 0x74.
+CODE_VADDR = 0x00000000
+CODE_SIZE = 3553940
+CODE_FILE_OFFSET = 0x74
 
 #: The instruction forms that complete an absolute address.
 COMPLETIONS = {
@@ -93,32 +100,20 @@ def addresses_of(data: bytes, start: int, end: int,
     The code is not position independent: an address is built in two steps,
     a ``lui`` that loads the high half and an ``addiu``, an ``ori`` or a
     ``lw`` that completes it.  The pair is recognised by the register they
-    share.
+    share — and a register that is written in between **kills** the high
+    half, which is what keeps a superseded ``lui`` from pairing with a
+    later completion.
     """
-    out: list[int] = []
-    high: dict[int, int] = {}
-    for address in range(start, end - 3, 4):
+    segment = data[CODE_FILE_OFFSET:CODE_FILE_OFFSET + CODE_SIZE]
+
+    def load_word(address: int) -> int | None:
         offset = to_file(loads, address)
         if offset is None or offset + 4 > len(data):
-            break
-        word = struct.unpack_from("<I", data, offset)[0]
-        opcode = _opcode(word)
-        if opcode == 0x3C000000:            # lui rt, imm
-            high[_rt(word)] = _imm(word) << 16
-            continue
-        if opcode in COMPLETIONS:
-            register = _rs(word)
-            if register not in high:
-                continue
-            base = high.pop(register)
-            if opcode == 0x24000000:        # addiu
-                value = (base + _imm(word)) & 0xFFFFFFFF
-            elif opcode == 0x34000000:      # ori
-                value = base | _imm(word)
-            else:                           # lw
-                value = (base + _imm(word)) & 0xFFFFFFFF
-            out.append(value)
-    return out
+            return None
+        return struct.unpack_from("<I", data, offset)[0]
+
+    return regflow.addresses(segment, start - CODE_VADDR, end - CODE_VADDR,
+                             load_word)
 
 
 def to_file(loads: list[tuple[int, int, int, int]], address: int) -> int | None:
