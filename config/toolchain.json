@@ -3,11 +3,23 @@
   "status": "empty",
   "scope": "the Allegrex executable of the pinned USA disc",
   "provenance": "No toolchain has been qualified yet. The PS2 siblings could not use a modern GCC for the R5900 either, and they solved it by measuring the register mode of the target; the Allegrex case has to be measured the same way, and it has not been.",
+  "measured": {
+    "note": "What the code of the retail executable says about the compiler that built it. Measured by tools/code_idioms.py; the numbers are in config/boot/idioms.json. These are properties of the compiler configuration, not of the code.",
+    "stack_slot_width": 16,
+    "stack_slot_evidence": "93 of the 93 frame sizes the code opens are multiples of 16 bytes; $ra sits on top of the frame, at frame_size - 4. This is the same convention the sibling projects measured in the Ratchet & Clank boot executable on PlayStation 2.",
+    "position_independence": false,
+    "position_independence_evidence": "the code contains no lui $gp, no addiu $gp and no lw from $gp: every global is reached through an absolute address. The module is therefore linked at a fixed address, and .text starts at 0x00000000.",
+    "debug_c_equality_idiom": 0,
+    "debug_c_evidence": "the GCC built in its debug-C mode tests equality with sltiu rX,rX,1. The code contains 3528 sltiu, and not one of them has that shape. The compiler that built this target was therefore NOT configured in the debug-C mode, unlike the PlayStation 2 Ratchet & Clank boot build.",
+    "one_return_per_body": true,
+    "one_return_evidence": "the review of wave 1 found exactly one jr $ra per body, at end - 8, with its delay slot at end - 4.",
+    "distance_frame_to_save_of_ra": "from 1 to 15 instructions, the mode at 1: the callee-saved registers are usually pushed before the return address."
+  },
   "candidates": [
     {
       "id": "psp-gcc-allegrex",
       "kind": "Allegrex MIPS cross compiler",
-      "provenance": "The GCC toolchain built for the Allegrex (PSP), as used by the PSPSDK and by the homebrew toolchains. An external binary: pinned by hash, never rebuilt here, never committed.",
+      "provenance": "The GCC toolchain built for the Allegrex (PSP), as used by the PSPSDK and by the homebrew toolchains. An external binary: pinned by hash, never rebuilt here and never committed.",
       "flags": {"cc1": ["-quiet", "-O2", "-G0"]},
       "status": "candidate",
       "notes": "The PSP SDK defaults are -O2 -G0. The retail build used its own flags, which are unknown; they are part of what phase 2 has to establish."
@@ -15,10 +27,10 @@
     {
       "id": "psp-sdk-allegrex",
       "kind": "Allegrex MIPS cross compiler from the PSPSDK",
-      "provenance": "The PSPSDK toolchain, the one the game was most likely built with. An external binary: pinned by hash, never rebuilt here, never committed.",
+      "provenance": "The PSPSDK toolchain, the one the game was most likely built with. An external binary: pinned by hash, never rebuilt here and never committed.",
       "flags": {"cc1": ["-quiet", "-O2", "-G0"]},
       "status": "candidate",
-      "notes": "Closer in spirit to the retail build than a modern GNU toolchain, and therefore the more likely first candidate to measure."
+      "notes": "The PSPSDK Allegrex toolchain is a GCC 3.3 lineage; the community port of it says as much. The debug-C idiom being absent here is a difference to be explained by the measured configuration, not by the version alone."
     },
     {
       "id": "psprecomp-allegrex",
@@ -29,5 +41,5 @@
     }
   ],
   "trials": [],
-  "notes": "This file records the *candidates* and the evidence each one would need. It does not record a qualified toolchain, because there is none yet: the executable behind the ~PSP container has not been read, so no compiler output can be compared with anything."
+  "notes": "This file records the *candidates*, the measurements that discriminate them, and the evidence each one would need. It does not record a qualified toolchain, because there is none yet: the executable behind the ~PSP container has only just been read, and no compiler output can be compared with anything."
 }

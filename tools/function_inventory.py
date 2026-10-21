@@ -44,6 +44,11 @@ INSN_SW_RA = (0xFFFF0000, 0xAFBF0000)      # sw    $ra, off($sp)
 MIN_FRAME = 0x10
 MAX_FRAME = 0x8000
 
+#: How far the scan looks for the save of the return address after the
+#: frame is opened.  The measured distance on the pinned target reaches
+#: fifteen instructions, when the callee-saved registers are pushed first.
+SAVE_WINDOW = 16
+
 PF_X = 1
 PF_W = 2
 PF_R = 4
@@ -89,11 +94,13 @@ def inventory(data: bytes) -> list[dict[str, object]]:
             frame = -immediate
             if not MIN_FRAME <= frame <= MAX_FRAME:
                 continue
-            # A function saves the return address right after it opens the
-            # frame, though not always on the very next instruction: the
-            # callee-saved registers are usually saved first.
+            # A function saves the return address after it opens the frame,
+            # but not necessarily on the very next instruction: the
+            # callee-saved registers are usually pushed first.  The
+            # measured distance between the frame and the save of $ra goes
+            # up to fifteen instructions, so the window has to be wide.
             saved = False
-            for ahead in range(1, 5):
+            for ahead in range(1, SAVE_WINDOW):
                 if index + ahead * 4 >= len(segment) - 4:
                     break
                 if _matches(_insn(segment, index + ahead * 4), *INSN_SW_RA):

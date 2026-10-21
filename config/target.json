@@ -63,7 +63,7 @@
     "text_size": 3335156,
     "bss_size": 263480,
     "function_candidates": 14655,
-    "functions_saving_ra": 8794,
+    "functions_saving_ra": 13494,
     "symbol_table": "empty: the ELF carries one null symbol, so the functions have no names and no sizes"
   },
   "build": {

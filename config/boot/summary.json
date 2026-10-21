@@ -2,7 +2,7 @@
   "entry_point": "0x00000000",
   "flags": "0x10A23001",
   "function_candidates": 14655,
-  "functions_saving_ra": 8794,
+  "functions_saving_ra": 13494,
   "has_section_headers": true,
   "module_info": {
     "attribute": 0,
