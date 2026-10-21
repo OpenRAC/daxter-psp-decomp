@@ -22,16 +22,18 @@
     {
       "id": "pspsdk-allegrex-gcc-3.3",
       "kind": "Allegrex MIPS cross compiler, GCC 3.3 lineage, the PSPSDK toolchain",
-      "provenance": "The toolchain the PSP SDK shipped. The community port BRS-PSP-Research-Initiative/Psptoolchain-Allegrex-3.3 names the sources: sourceware git branch releases/gcc-3.3, described as the version Sony built the PSP toolchain off of; binutils 2.25.1; newlib-cygwin 1.15.0. The port's README lists GCC 3.2, 3.3, 3.4 and 4.0 as the versions whose strings are found in the original binaries, with 3.3 first. The exact build recipe used for wave 2 is in work/TOOLCHAIN/scratch/legacy33/.",
+      "provenance": "The toolchain the PSP SDK shipped. The community port BRS-PSP-Research-Initiative/Psptoolchain-Allegrex-3.3 names the sources: sourceware git branch releases/gcc-3.3, described as the version Sony built the PSP toolchain off of; binutils 2.25.1, built for psp; newlib-cygwin 1.15.0. The port's README lists GCC 3.2, 3.3, 3.4 and 4.0 as the versions whose strings are found in the original binaries, with 3.3 first. The exact build recipe used for wave 2 is in work/TOOLCHAIN/scratch/legacy33/RECIPE.md.",
       "flags": {"cc1": ["-quiet", "-O2", "-G0"], "library": ["-Os"]},
       "status": "candidate",
-      "notes": "not built yet. The build is the remaining work.",
-      "falsified_if": "the GCC 3.3 Allegrex replays neither the prologue rule nor the form of the strcmp."
+      "obtained": false,
+      "obstacle": "the community port is incomplete: 28 patch rejects, and the Allegrex machine description is missing from it. The binutils 2.25.1 for psp were built; the compiler was not.",
+      "notes": "A caveat on the falsification: the community port brings in the *modern* Allegrex support, so a compiler rebuilt through it would follow the modern convention, and would falsify the fidelity of the port rather than the hypothesis itself. Only a period-correct binary, or a faithful port, can falsify H1.",
+      "falsified_if": "a period-correct GCC 3.x Allegrex, or a faithful port of it, replays neither the prologue rule nor the form of the strcmp."
     },
     {
       "id": "psp-gcc-8.2",
       "kind": "Allegrex MIPS cross compiler, GCC 8.2.0",
-      "provenance": "The PSPSDK 0.15.0 of ps2dev, with the psp-gcc 8.2.0 it ships.",
+      "provenance": "The PSPSDK 0.15.0 of ps2dev, with the psp-gcc 8.2.0 it ships. Obtained: a native Windows build.",
       "flags": {"cc1": ["-quiet", "-O2", "-G0"], "library": ["-Os"]},
       "status": "rejected",
       "measured_cause": "it puts $ra at frame_size - 4 in 15 of 15 bodies, and does not always allocate a frame of a multiple of 16 (15 of 20). The retail rule is a spread over 1 to 4 slots below $ra, and 93 of 93 frames are multiples of 16.",
@@ -40,7 +42,7 @@
     {
       "id": "psp-gcc-15.2",
       "kind": "Allegrex MIPS cross compiler, GCC 15.2.0",
-      "provenance": "pspdev/gcc, the port of a current GCC to the Allegrex, built by psptoolchain-allegrex.",
+      "provenance": "pspdev/gcc, the port of a current GCC to the Allegrex, branch allegrex-v15.2.0, commit 1a339979, built by psptoolchain-allegrex. Obtained: the pspdev image.",
       "flags": {"cc1": ["-quiet", "-O2", "-G0"], "library": ["-Os"]},
       "status": "rejected",
       "measured_cause": "same as the 8.2: $ra at frame_size - 4 in 16 of 16 bodies, and 13 of 20 frames a multiple of 16.",
@@ -49,18 +51,18 @@
     {
       "id": "ee-gcc-2.95.2",
       "kind": "PlayStation 2 Emotion Engine cross compiler, GCC 2.95.2",
-      "provenance": "The ee-gcc 2.9-ee-991111 of the sibling PlayStation 2 projects. Not an Allegrex compiler: it is a probe of the same family, and it was used to show that the retail prologue rule is the rule of an old 64-bit MIPS GCC and not the rule of a modern one.",
+      "provenance": "The ee-gcc 2.9-ee-991111 of the sibling PlayStation 2 projects, obtained and run under WSL. Not an Allegrex compiler: it is a probe of the same family, and it was used to show that the retail prologue rule is the rule of an old 64-bit MIPS GCC and not the rule of a modern one.",
       "flags": {"cc1": ["-quiet", "-O2", "-G0"]},
       "status": "probe",
       "measured_cause": "it puts $ra at frame_size - 16 in 26 of 28 bodies and allocates 28 of 28 frames in multiples of 16: the rule of the retail code.",
-      "regression_control": "its strcmp has the same thirteen slots, the same signed comparison and the same absence of masking, but uses beql where the retail code uses bnel. The form matches; the sequence does not."
+      "regression_control": "its strcmp has the same thirteen slots, the same signed comparison and the same absence of masking, but uses beql where the retail code uses bnel. The form matches; the sequence does not. It also carries the debug-C idiom the retail code does not have, so it is not the compiler either."
     },
     {
       "id": "clang-psp",
       "kind": "clang cross compiler, LLVM 10",
       "provenance": "pspdev/clang-psp, a backend that was frozen in 2020.",
       "status": "rejected",
-      "measured_cause": "a 2020 backend cannot be the compiler of a 2006 game, and the retail prologue rule is not one of the shapes a modern clang produces."
+      "measured_cause": "a 2020 backend cannot be the compiler of a 2005 game, and the retail prologue rule is not one of the shapes a modern clang produces."
     },
     {
       "id": "psprecomp-allegrex",
@@ -75,8 +77,9 @@
     "statement": "The retail build is a GCC of the 3.x line, Allegrex target, built without the debug-C mode, with the library compiled for size.",
     "measured_cause": "the prologue rule and the library variant are both properties of the compiler and of the library, and both are measured.",
     "regression_control": "the population of 13 495 bodies, not a sample; and the strcmp, whose source is known.",
-    "falsified_if": "the GCC 3.3 Allegrex replays neither the prologue rule nor the form of the strcmp.",
-    "verdict": "open: the GCC 3.3 Allegrex is not built yet"
+    "falsified_if": "a period-correct GCC 3.x Allegrex, or a faithful port of it, replays neither the prologue rule nor the form of the strcmp.",
+    "verdict": "open: the GCC 3.3 Allegrex is not built yet",
+    "caveat": "the community port brings in the modern Allegrex support, so a compiler rebuilt through it would follow the modern convention. It would falsify the fidelity of the port, not the hypothesis. Only a period-correct binary, or a faithful port, can falsify H1."
   },
-  "notes": "The measurement is the advance; the qualification is not. What the project now holds is a discriminator that separates the candidates without guessing, and a recipe to build the one that is still standing. See work/TOOLCHAIN/shape.tsv for the table, and the scratch directory for the build recipe."
+  "notes": "The measurement is the advance; the qualification is not. What the project now holds is a discriminator that separates the candidates without guessing, and a recipe to build the one that is still standing. See work/TOOLCHAIN/shape.tsv for the table, and work/TOOLCHAIN/scratch/legacy33/RECIPE.md for the recipe."
 }
