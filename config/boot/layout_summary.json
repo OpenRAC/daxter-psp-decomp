@@ -1,26 +1,35 @@
 {
   "class_counts": {
-    "function": 240,
+    "function": 421,
     "not_function": 0,
     "unknown": 0
   },
   "confidence_counts": {
-    "high": 228,
+    "high": 402,
     "low": 0,
-    "medium": 12
+    "medium": 19
   },
+  "duplicates": 139,
   "lots": [
     "L01",
     "L02",
     "L03",
     "L04",
     "L05",
-    "L06"
+    "L06",
+    "L07",
+    "L08",
+    "L09",
+    "L10",
+    "L11",
+    "L12",
+    "L13",
+    "L14"
   ],
-  "name_corrections": 0,
-  "named": 15,
-  "reviewed": 240,
-  "sweep_agreement_rate": 0.9333,
-  "sweep_checked": 240,
-  "sweep_disagreements": 16
+  "name_corrections": 2,
+  "named": 42,
+  "reviewed": 421,
+  "sweep_agreement_rate": 0.9905,
+  "sweep_checked": 421,
+  "sweep_disagreements": 4
 }

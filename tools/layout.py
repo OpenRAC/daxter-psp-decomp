@@ -73,7 +73,14 @@ REG_T9 = 25
 
 
 def _is_conditional(word: int) -> bool:
-    return (word >> 26) in CONDITIONAL or (word >> 26) in REGIMM
+    if (word >> 26) in CONDITIONAL or (word >> 26) in REGIMM:
+        return True
+    # The floating-point branches: bc1f, bc1t, bc1fl and bc1tl.  A
+    # disassembler that does not separate them from the other cop1
+    # instructions makes a body look broken, and the bound explode.
+    if (word >> 26) == 0x11 and (word & 0x3F) in (0x08, 0x09, 0x0E, 0x0F):
+        return True
+    return False
 
 
 def _is_jump(word: int) -> bool:
@@ -203,6 +210,7 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
     call_sites: dict[int, int] = defaultdict(int)
     branch_targets: set[int] = set()
     returns: set[int] = set()
+    virtual_calls = 0
 
     for index in range(0, max(0, len(segment) - 4), 4):
         word = _insn(segment, index)
@@ -211,6 +219,11 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
             target = _branch_target(word, pc)
             if target is not None:
                 call_sites[target] += 1
+        elif (word & 0xFC000000) == OP_SPECIAL and (word & 0x3F) == FUNCT_JALR:
+            # A call through a register: a virtual call.  Its target is
+            # not known statically, but the count says how much of the
+            # code is reached that way.
+            virtual_calls += 1
         elif (word & 0xFC000000) in (OP_J, OP_BEQ, OP_BNE):
             target = _branch_target(word, pc)
             if target is not None:
@@ -300,7 +313,7 @@ def analyse(data: bytes) -> tuple[list[dict[str, object]], list[dict[str, object
         {"address": target, "sites": count}
         for target, count in sorted(call_sites.items(), key=lambda kv: -kv[1])
     ]
-    return calls, bodies
+    return calls, bodies, virtual_calls
 
 
 def write_calls(path: Path, calls: list[dict[str, object]]) -> None:
@@ -364,10 +377,14 @@ def main(argv: list[str] | None = None) -> int:
                              "ones already reviewed")
     parser.add_argument("--first-lot", type=int, default=1,
                         help="the number of the first lot to write")
+    parser.add_argument("--exclude", type=Path, nargs="*", default=None,
+                        help="layout tables of the lots already cut: their "
+                             "targets are left out of the new ones, so that "
+                             "two waves never review the same body")
     args = parser.parse_args(argv)
 
     data = args.elf.read_bytes()
-    calls, bodies = analyse(data)
+    calls, bodies, virtual_calls = analyse(data)
 
     write_calls(args.work / "E0" / "calls.tsv", calls)
     write_bounds(args.work / "E0" / "bounds.tsv", bodies)
@@ -376,6 +393,20 @@ def main(argv: list[str] | None = None) -> int:
     # leverage, then stratified by size.
     eligible = [row for row in bodies if int(row["calls"]) > 0]
     eligible.sort(key=lambda row: (-int(row["calls"]), -int(row["size"])))
+
+    # The bodies a previous wave already reviewed are left out.
+    excluded: set[str] = set()
+    for path in (args.exclude or []):
+        if not path.is_file():
+            continue
+        with path.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle, delimiter="\t"):
+                if row.get("start"):
+                    excluded.add(row["start"])
+    if excluded:
+        eligible = [row for row in eligible
+                    if f"0x{int(row['start']):08X}" not in excluded]
+
     shortlist = pick_stratified(eligible, args.skip + args.lots * args.per_lot)
     shortlist = shortlist[args.skip:]
 
@@ -396,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{path.name}: {len(chunk)} targets")
 
     print(f"call targets      : {len(calls)}")
+    print(f"virtual calls     : {virtual_calls}")
     print(f"bounded candidates: {len(bodies)}")
     print(f"called candidates : {len(eligible)}")
     print(f"shortlist         : {len(shortlist)}")

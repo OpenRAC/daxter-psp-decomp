@@ -27,6 +27,8 @@ import json
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
+
 FIELDS = ["start", "end", "size", "class", "name", "name_evidence",
           "confidence", "sweep_end", "sweep_size", "bound_agrees"]
 
@@ -49,6 +51,30 @@ def read_sweep(path: Path) -> dict[str, dict[str, str]]:
     return {row["start"]: row for row in rows if row.get("start")}
 
 
+def build_identifiers() -> set[str]:
+    """Return the strings of the build that are not function names.
+
+    The version registration of the target passes the **branch** of the
+    build where an assert would pass the name of the function.  A name that
+    is a build identifier is therefore not a function name, whatever the
+    evidence says.
+    """
+    path = ROOT / "config" / "target.json"
+    if not path.is_file():
+        return set()
+    try:
+        build = json.loads(path.read_text(encoding="utf-8")).get("build", {})
+    except json.JSONDecodeError:
+        return set()
+    out = set()
+    for key in ("branch", "engine", "port_developer", "object_layer"):
+        value = build.get(key)
+        if isinstance(value, str) and value:
+            out.add(value)
+            out.add(value.split(",")[0].strip())
+    return out
+
+
 def read_named(path: Path) -> list[dict[str, str]]:
     """Read a naming deliverable: start, name, evidence, confidence, corrects."""
     if not path.is_file():
@@ -65,6 +91,8 @@ def merge(work: Path, out: Path) -> dict[str, object]:
 
     sweep = read_sweep(work / "E0" / "bounds.tsv")
     merged: list[dict[str, str]] = []
+    seen: dict[str, int] = {}
+    duplicates = 0
     counts = {"function": 0, "not_function": 0, "unknown": 0}
     confidence = {"high": 0, "medium": 0, "low": 0}
     named = 0
@@ -75,6 +103,13 @@ def merge(work: Path, out: Path) -> dict[str, object]:
     for lot in lots:
         for row in read_lot(lot):
             start = row["start"]
+            if start in seen:
+                # Two lots reviewed the same body.  The review is the
+                # truth, and it is the same truth; keep the first and say
+                # how many times it was seen.
+                duplicates += 1
+                continue
+            seen[start] = 1
             end = row.get("end", "")
             size = row.get("size", "")
             klass = row.get("class", "unknown")
@@ -116,6 +151,7 @@ def merge(work: Path, out: Path) -> dict[str, object]:
             })
 
     # The naming assignments: the assert mechanism and the naming pass.
+    identifiers = build_identifiers()
     for source in (work / "ASSERT" / "names.tsv", work / "NAMES" / "names.tsv"):
         for row in read_named(source):
             start = row["start"]
@@ -124,6 +160,9 @@ def merge(work: Path, out: Path) -> dict[str, object]:
                 continue
             proposed = row["name"]
             if not proposed or proposed.startswith("func_"):
+                continue
+            if proposed in identifiers:
+                # A build identifier, not the name of a function.
                 continue
             if proposed == target["name"]:
                 continue
@@ -153,6 +192,7 @@ def merge(work: Path, out: Path) -> dict[str, object]:
     summary = {
         "lots": [lot.parent.name for lot in lots],
         "reviewed": len(merged),
+        "duplicates": duplicates,
         "class_counts": counts,
         "confidence_counts": confidence,
         "named": named,
@@ -176,6 +216,8 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = merge(args.work, args.out)
     print(f"reviewed        : {summary['reviewed']}")
+    if summary["duplicates"]:
+        print(f"duplicates      : {summary['duplicates']}")
     for name, count in summary["class_counts"].items():
         print(f"  {name:<14}: {count}")
     print(f"named           : {summary['named']}")
