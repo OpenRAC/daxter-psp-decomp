@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Unit tests of the repository tools, on synthetic data only.
+"""Unit tests of the integration tools, on synthetic data only.
 
-No game data, no disc image and no retail byte appears in this file. Every
-fixture is built here, byte by byte, from the documented layout of each
-container.
+No game data, no disc image and no retail byte appears in this file.  Every
+fixture is built here, byte by byte, from the documented format of each
+file.
 
 Run:
     python3 -m unittest discover -s tests
@@ -11,7 +11,7 @@ Run:
 
 from __future__ import annotations
 
-import json
+import csv
 import struct
 import sys
 import tempfile
@@ -24,9 +24,14 @@ sys.path.insert(0, str(ROOT / "tools"))
 import disc_inventory  # noqa: E402
 import decrypt_psp  # noqa: E402
 import function_inventory  # noqa: E402
+import merge_layout  # noqa: E402
 import psp_crypto  # noqa: E402
 import psp_elf  # noqa: E402
 import psp_formats as fmt  # noqa: E402
+
+LOT_HEADER = ["start", "end", "size", "class", "name", "name_evidence",
+               "confidence"]
+NAMES_HEADER = ["start", "name", "evidence", "confidence", "corrects"]
 
 
 def build_sfo(entries: list[tuple[str, str]]) -> bytes:
@@ -68,7 +73,7 @@ def build_pack(entries: list[tuple[int, bytes, int, int]]) -> bytes:
     table_start = 0x24 + len(entries) * 0x10
     table = bytearray()
     blobs = bytearray()
-    for index, (entry_type, payload, identifier) in enumerate(entries):
+    for entry_type, payload, identifier in entries:
         offset = table_start + len(blobs)
         table += struct.pack("<IIII", offset, len(payload), entry_type, identifier)
         blobs += payload
@@ -88,6 +93,20 @@ def build_encrypted_psp(name: str, parameter: int = 0) -> bytes:
     body = name.encode("ascii") + b"\x00"
     return (fmt.MAGIC_PSP_ENC + struct.pack("<IH", parameter, 0x0101) +
             body + b"\x00" * 16)
+
+
+def build_prx(code: bytes = b"") -> bytes:
+    """Build a minimal Allegrex PRX: one program header, no sections."""
+    header = bytearray(b"\x7fELF\x01\x01\x01\x00" + b"\x00" * 8)
+    header += struct.pack("<HH", 0xFFA0, 8)
+    header += struct.pack("<I", 1)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 52)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<HHHHHH", 52, 32, 1, 0, 0, 0)
+    program = struct.pack("<IIIIIIII", 1, 84, 0, 0, len(code), len(code), 5, 4)
+    return bytes(header) + program + code
 
 
 class SfoTests(unittest.TestCase):
@@ -236,24 +255,6 @@ class ElfTests(unittest.TestCase):
             self.assertEqual(len(report["programs"]), 1)
 
 
-def build_prx(code: bytes = b"") -> bytes:
-    """Build a minimal Allegrex PRX: one program header, no sections.
-
-    The program header covers the code that follows the headers, so the
-    inventory sees it as the executable segment.
-    """
-    header = bytearray(b"\x7fELF\x01\x01\x01\x00" + b"\x00" * 8)
-    header += struct.pack("<HH", 0xFFA0, 8)          # e_type, e_machine
-    header += struct.pack("<I", 1)                  # e_version
-    header += struct.pack("<I", 0)                  # e_entry
-    header += struct.pack("<I", 52)                 # e_phoff
-    header += struct.pack("<I", 0)                  # e_shoff
-    header += struct.pack("<I", 0)                  # e_flags
-    header += struct.pack("<HHHHHH", 52, 32, 1, 0, 0, 0)
-    program = struct.pack("<IIIIIIII", 1, 84, 0, 0, len(code), len(code), 5, 4)
-    return bytes(header) + program + code
-
-
 class FunctionInventoryTests(unittest.TestCase):
     def test_finds_a_frame_opening(self) -> None:
         code = struct.pack("<I", 0x03E00008)          # jr $ra
@@ -269,6 +270,94 @@ class FunctionInventoryTests(unittest.TestCase):
         code = struct.pack("<I", 0x27BDFFF8)           # addiu $sp,$sp,-8
         candidates = function_inventory.inventory(build_prx(code))
         self.assertEqual(candidates, [])
+
+
+
+def _read_layout(out: Path) -> list[dict[str, str]]:
+    """Read the merged layout table of a synthetic wave."""
+    with (out / "boot" / "layout.tsv").open(encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle, delimiter="\t"))
+
+class MergeTests(unittest.TestCase):
+    """The integration of the lots, on a synthetic wave."""
+
+    def _make_wave(self, root: Path) -> Path:
+        work = root / "work"
+        (work / "E0").mkdir(parents=True)
+        with (work / "E0" / "bounds.tsv").open("w", encoding="utf-8",
+                                               newline="") as handle:
+            writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+            writer.writerow(["start", "end", "size", "bound_source", "evidence",
+                             "calls", "returns"])
+            writer.writerow(["0x00000100", "0x00000140", 64, "call", "call",
+                             3, 1])
+            writer.writerow(["0x00000200", "0x00000240", 64, "call", "call",
+                             1, 1])
+        (work / "L01").mkdir(parents=True)
+        with (work / "L01" / "layout.tsv").open("w", encoding="utf-8",
+                                                newline="") as handle:
+            writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+            writer.writerow(LOT_HEADER)
+            writer.writerow(["0x00000100", "0x00000140", 64, "function",
+                             "func_00000100", "-", "high"])
+            writer.writerow(["0x00000200", "0x00000230", 48, "function",
+                             "func_00000200", "-", "medium"])
+        return work
+
+    def test_merges_the_lots(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            work = self._make_wave(root)
+            out = root / "config"
+            summary = merge_layout.merge(work, out)
+            self.assertEqual(summary["reviewed"], 2)
+            self.assertEqual(summary["class_counts"]["function"], 2)
+            self.assertEqual(summary["named"], 0)
+            self.assertEqual(summary["sweep_checked"], 2)
+            # the second body disagrees with the sweep
+            self.assertEqual(summary["sweep_disagreements"], 1)
+            rows = _read_layout(out)
+            self.assertEqual(len(rows), 2)
+            self.assertEqual(rows[1]["bound_agrees"], "no")
+
+    def test_applies_the_naming_deliverable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            work = self._make_wave(root)
+            (work / "ASSERT").mkdir()
+            with (work / "ASSERT" / "names.tsv").open("w", encoding="utf-8",
+                                                      newline="") as handle:
+                writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+                writer.writerow(NAMES_HEADER)
+                writer.writerow(["0x00000100", "CFile_Open", "assert $a3", "high",
+                                 "-"])
+            out = root / "config"
+            summary = merge_layout.merge(work, out)
+            self.assertEqual(summary["named"], 1)
+            rows = _read_layout(out)
+            self.assertEqual(rows[0]["name"], "CFile_Open")
+
+    def test_records_a_correction(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            work = self._make_wave(root)
+            (work / "NAMES").mkdir()
+            with (work / "NAMES" / "names.tsv").open("w", encoding="utf-8",
+                                                    newline="") as handle:
+                writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+                writer.writerow(NAMES_HEADER)
+                writer.writerow(["0x00000100", "CFile_Open", "the string ~CFile",
+                                 "high", "-"])
+            (work / "L01" / "layout.tsv").write_text(
+                "start\tend\tsize\tclass\tname\tname_evidence\tconfidence\n"
+                "0x00000100\t0x00000140\t64\tfunction\tCFile_Close\t-\thigh\n",
+                encoding="utf-8")
+            out = root / "config"
+            summary = merge_layout.merge(work, out)
+            self.assertEqual(summary["name_corrections"], 1)
+            rows = _read_layout(out)
+            self.assertEqual(rows[0]["name"], "CFile_Open")
+            self.assertIn("corrects CFile_Close", rows[0]["name_evidence"])
 
 
 class InventoryTests(unittest.TestCase):
