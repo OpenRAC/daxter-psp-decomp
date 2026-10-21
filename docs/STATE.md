@@ -93,6 +93,39 @@ yet, and if it replays neither the prologue rule nor the form of the
 **Hypothesis H1 is open, not proved.** The measurement is the advance; the
 qualification is not.
 
+### What the toolchain measurement established
+
+The compiler that built the retail bytes is not guessed, it is **measured**,
+and the measurement **discriminates**. Wave 3 built the candidates and
+measured them.
+
+| Property | Retail | ee-gcc 2.95.2 (PS2 EE) | GCC 3.3.6 (mips-elf) | GCC 8.2 / 15.2 (Allegrex) |
+| --- | --- | --- | --- | --- |
+| prologue | `$ra` last, 16-byte save area; 13 494 / 13 495 frames a multiple of 16 | `$ra` at frame − 16, 26 / 26 | o32: 4-byte slots, 8-byte frames; n32: 16-byte frames, 8-byte slots | `$ra` always on top, 15/15 and 16/16 |
+| the `strcmp` at `0x00245504` | 13 slots, `lb` + `lbu`, **no masking**, `bnel` | **13 slots**, `lb` + `lbu`, no masking, `beql` | 17 slots at −Os, 22 at −O2 | 11 or 19 slots, masks with `andi` |
+| the library | the newlib 1.15 **size** variant | the same | the same | the same |
+
+**The cause, measured:** the prologue rule is a property of the **target
+configuration**, not of the compiler version. `MIPS_STACK_ALIGN`
+(mips.h:2876) aligns the stack on 8 bytes for o32, o64 and eabi, and on
+16 for n32 and n64; `UNITS_PER_WORD` (mips.h:1490) is 4 in o32. The retail
+rule — slots of four bytes in a save area aligned on sixteen — is what a
+**PlayStation 2 EE** configuration produces, and the PSP has the same
+shape: 64-bit registers with the o32 calling convention.
+
+**H1 is not confirmed.** A GCC 3.3.6 in nine ABI and ISA configurations
+replays neither the prologue rule nor the form of the `strcmp`. And the
+clause about the debug-C mode is **withdrawn**: the option is `-mdebugc`,
+it is off by default, and GCC 3.3.6 emits the idiom *with or without*
+it. The absence of the idiom in the retail code is a property of **the
+code**, not evidence about the compiler.
+
+**H2 is open, and it is the sharpest form of the question.** The
+`ee-gcc` 2.95.2 of the sibling projects reproduces **both** properties of
+the retail code, and differs on exactly one thing: its `strcmp` uses
+`beql` where the retail code uses `bnel`. Building the **same
+configuration** on the 3.x line decides between the two lines of GCC.
+
 ### What wave 3 established
 
 **Twenty lots of forty targets, each verified against the code**, and the

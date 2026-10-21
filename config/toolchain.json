@@ -2,39 +2,47 @@
   "id": "none-qualified",
   "status": "measured",
   "scope": "the Allegrex executable of the pinned USA disc",
-  "provenance": "No toolchain has been qualified yet. The PS2 siblings could not use a modern GCC for the R5900 either, and they solved it by measuring the register mode of the target; the Allegrex case has to be measured the same way. Wave 2 measured it, and the measurement discriminates the candidates.",
+  "provenance": "No toolchain has been qualified yet. The PS2 siblings could not use a modern GCC for the R5900 either, and they solved it by measuring the register mode of the target; the Allegrex case has to be measured the same way. Waves 2 and 3 measured it, and the measurement discriminates: the rule of the retail code is the rule of a configuration, and the configuration is now named.",
   "measured": {
     "note": "What the code of the retail executable says about the compiler that built it. Measured by tools/code_idioms.py; the numbers are in config/boot/idioms.json. These are properties of the compiler configuration, not of the code.",
     "stack_slot_width": 16,
     "stack_slot_evidence": "93 of the 93 frame sizes the code opens are multiples of 16 bytes.",
-    "prologue_rule": "The callee-saved registers are pushed first, at the bottom of a save area aligned on sixteen bytes, and $ra is pushed last, just above them: the number of slots between the frame and the saved $ra is 1 in 1524 bodies, 2 in 3033, 3 in 2133 and 4 in 6798. A modern GCC puts $ra on top of the frame, in 100 per cent of the bodies.",
+    "prologue_rule": "The callee-saved registers are pushed first, at the bottom of a save area aligned on sixteen bytes, and $ra is pushed last, just above them: the number of slots between the frame and the saved $ra is 1 in 1524 bodies, 2 in 3033, 3 in 2133 and 4 in 6798.",
     "prologue_rule_measured_over": "13 495 bodies",
+    "prologue_rule_cause": "MIPS_STACK_ALIGN (mips.h:2876) aligns the stack on 8 bytes for o32, o64 and eabi, and on 16 for n32 and n64; UNITS_PER_WORD (mips.h:1490) is 4 in o32. The retail rule - slots of four bytes in a save area aligned on sixteen - is therefore a property of the TARGET CONFIGURATION, not of the compiler version. A GCC 3.3 in n32 gives the alignment but eight-byte slots; a GCC 3.3 in o32 gives four-byte slots and eight-byte frames; only the PlayStation 2 EE configuration gives both, and it does.",
     "position_independence": false,
     "position_independence_evidence": "the code contains no lui $gp, no addiu $gp and no load from $gp: every global is reached through an absolute address. The module is therefore linked at a fixed address, and .text starts at 0x00000000.",
     "debug_c_equality_idiom": 0,
-    "debug_c_evidence": "the GCC built in its debug-C mode tests equality with sltu rX,rX,1, or with sltiu when the immediate is one. The code has 3528 sltu and one sltiu, and not one of them has that shape. The compiler that built this target was therefore NOT configured in the debug-C mode, unlike the PlayStation 2 Ratchet & Clank boot build, which does carry the idiom.",
+    "debug_c_evidence": "CORRECTED. The option is -mdebugc (TARGET_DEBUG_C_MODE) and it is OFF by default (MASK_DEBUG_C 0, mips.h:247). GCC 3.3.6 emits sltu rX,rX,1 four times in the equality probe WITH OR WITHOUT the option, exactly as the ee-gcc 2.95.2 probe does. The retail code has none, zero out of 3528 sltu, so its absence is a property of THE CODE and not evidence about the compiler. The earlier reading of this as a discriminator was wrong, and it is withdrawn.",
     "one_return_per_body": true,
     "one_return_evidence": "the review of wave 1 found exactly one jr $ra per body, at end - 8, with its delay slot at end - 4.",
     "distance_frame_to_save_of_ra": "from 1 to 15 instructions, the mode at 1: the callee-saved registers are usually pushed before the return address.",
-    "library": "the strcmp of the retail code at 0x00245504 is the newlib 1.15 size variant, the one selected by PREFER_SIZE_OVER_SPEED: thirteen instruction slots, no frame, four delay slots all filled with useful code, a signed byte comparison and an unsigned difference, with no masking. The library was therefore built with -Os, or with PREFER_SIZE_OVER_SPEED defined."
+    "library": "the strcmp of the retail code at 0x00245504 is the newlib 1.15 size variant, the one selected by PREFER_SIZE_OVER_SPEED: thirteen instruction slots, no frame, four delay slots all filled with useful code, a signed byte comparison and an unsigned difference, with no masking at all. The library was therefore built with -Os, or with PREFER_SIZE_OVER_SPEED defined."
   },
   "candidates": [
     {
-      "id": "pspsdk-allegrex-gcc-3.3",
-      "kind": "Allegrex MIPS cross compiler, GCC 3.3 lineage, the PSPSDK toolchain",
-      "provenance": "The toolchain the PSP SDK shipped. The community port BRS-PSP-Research-Initiative/Psptoolchain-Allegrex-3.3 names the sources: sourceware git branch releases/gcc-3.3, described as the version Sony built the PSP toolchain off of; binutils 2.25.1, built for psp; newlib-cygwin 1.15.0. The port's README lists GCC 3.2, 3.3, 3.4 and 4.0 as the versions whose strings are found in the original binaries, with 3.3 first. The exact build recipe used for wave 2 is in work/TOOLCHAIN/scratch/legacy33/RECIPE.md.",
-      "flags": {"cc1": ["-quiet", "-O2", "-G0"], "library": ["-Os"]},
+      "id": "ee-gcc-2.95.2-ps2ee",
+      "kind": "PlayStation 2 Emotion Engine cross compiler, GCC 2.95.2, o32 ABI with 64-bit registers",
+      "provenance": "The ee-gcc 2.9-ee-991111 of the sibling PlayStation 2 projects, rebuilt and re-measured by wave 3.",
+      "flags": {"cc1": ["-quiet", "-O2", "-G0"]},
       "status": "candidate",
-      "obtained": false,
-      "obstacle": "the community port is incomplete: 28 patch rejects, and the Allegrex machine description is missing from it. The binutils 2.25.1 for psp were built; the compiler was not.",
-      "notes": "A caveat on the falsification: the community port brings in the *modern* Allegrex support, so a compiler rebuilt through it would follow the modern convention, and would falsify the fidelity of the port rather than the hypothesis itself. Only a period-correct binary, or a faithful port, can falsify H1.",
-      "falsified_if": "a period-correct GCC 3.x Allegrex, or a faithful port of it, replays neither the prologue rule nor the form of the strcmp."
+      "measured_cause": "it is the only compiler measured that reproduces BOTH properties of the retail code: the prologue rule ($ra at frame - 16 in 26 of 26 bodies, 16-byte frames) and the form of the strcmp (13 slots, lb and lbu, no masking).",
+      "residual_difference": "its strcmp uses beql where the retail code uses bnel. That is the one difference left, and it is what decides between the 2.95 line and the 3.x line.",
+      "regression_control": "the population of 13 495 bodies for the prologue, and the exact newlib 1.15 source for the strcmp."
+    },
+    {
+      "id": "gcc-3.3.6-mips-elf",
+      "kind": "GCC 3.3.6 (sourceware releases/gcc-3.3), target mips-elf",
+      "provenance": "Built by wave 3 from the sources of the community port, with binutils 2.25.1, gmp 4.3.2, mpfr 2.4.2, mpc 0.8.1 and the newlib 1.15.0 headers. The recipe is reproducible: work/H1/build.md.",
+      "flags": {"cc1": ["-quiet", "-O2", "-G0"], "library": ["-Os"]},
+      "status": "rejected",
+      "measured_cause": "in every one of the nine ABI and ISA configurations it was built for, it fails the prologue rule: o32 and eabi give four-byte slots and eight-byte frames, n32 gives the alignment but eight-byte slots. The strcmp is 17 slots at -Os and 22 at -O2, against the 13 of the retail code.",
+      "regression_control": "the corpus of 180 bodies for the prologue, and the exact newlib source for the strcmp."
     },
     {
       "id": "psp-gcc-8.2",
       "kind": "Allegrex MIPS cross compiler, GCC 8.2.0",
       "provenance": "The PSPSDK 0.15.0 of ps2dev, with the psp-gcc 8.2.0 it ships. Obtained: a native Windows build.",
-      "flags": {"cc1": ["-quiet", "-O2", "-G0"], "library": ["-Os"]},
       "status": "rejected",
       "measured_cause": "it puts $ra at frame_size - 4 in 15 of 15 bodies, and does not always allocate a frame of a multiple of 16 (15 of 20). The retail rule is a spread over 1 to 4 slots below $ra, and 93 of 93 frames are multiples of 16.",
       "regression_control": "the strcmp it compiles has 11 slots at -Os and 19 at -O2, against the 13 of the retail code, and it masks with andi where the retail code does not mask at all."
@@ -43,19 +51,17 @@
       "id": "psp-gcc-15.2",
       "kind": "Allegrex MIPS cross compiler, GCC 15.2.0",
       "provenance": "pspdev/gcc, the port of a current GCC to the Allegrex, branch allegrex-v15.2.0, commit 1a339979, built by psptoolchain-allegrex. Obtained: the pspdev image.",
-      "flags": {"cc1": ["-quiet", "-O2", "-G0"], "library": ["-Os"]},
       "status": "rejected",
       "measured_cause": "same as the 8.2: $ra at frame_size - 4 in 16 of 16 bodies, and 13 of 20 frames a multiple of 16.",
       "regression_control": "the strcmp it compiles has 11 slots at -Os and 15 at -O2, against the 13 of the retail code."
     },
     {
-      "id": "ee-gcc-2.95.2",
-      "kind": "PlayStation 2 Emotion Engine cross compiler, GCC 2.95.2",
-      "provenance": "The ee-gcc 2.9-ee-991111 of the sibling PlayStation 2 projects, obtained and run under WSL. Not an Allegrex compiler: it is a probe of the same family, and it was used to show that the retail prologue rule is the rule of an old 64-bit MIPS GCC and not the rule of a modern one.",
-      "flags": {"cc1": ["-quiet", "-O2", "-G0"]},
-      "status": "probe",
-      "measured_cause": "it puts $ra at frame_size - 16 in 26 of 28 bodies and allocates 28 of 28 frames in multiples of 16: the rule of the retail code.",
-      "regression_control": "its strcmp has the same thirteen slots, the same signed comparison and the same absence of masking, but uses beql where the retail code uses bnel. The form matches; the sequence does not. It also carries the debug-C idiom the retail code does not have, so it is not the compiler either."
+      "id": "pspsdk-allegrex-gcc-3.3",
+      "kind": "Allegrex MIPS cross compiler, GCC 3.3 lineage, the PSPSDK toolchain",
+      "provenance": "The toolchain the PSP SDK shipped. The community port BRS-PSP-Research-Initiative/Psptoolchain-Allegrex-3.3 names the sources: sourceware git branch releases/gcc-3.3, described as the version Sony built the PSP toolchain off of; binutils 2.25.1; newlib-cygwin 1.15.0.",
+      "status": "not_built",
+      "obstacle": "the community port does not carry the Allegrex machine description in an applicable form, with 28 patch rejects. Wave 3 built the same GCC 3.3.6 from the same sources for mips-elf, and it works; the missing part is the machine description alone.",
+      "caveat": "the community port brings in the modern Allegrex support, so a compiler rebuilt through it would follow the modern convention. It would falsify the fidelity of the port, not the hypothesis."
     },
     {
       "id": "clang-psp",
@@ -72,14 +78,19 @@
       "notes": "These recompile rather than decompile. They are the right family of tools for the portability goal, and the wrong tool for the matching goal; they are listed because the project may deliver both, and because the recompilation route is what makes the game playable without the hardware."
     }
   ],
-  "hypothesis": {
-    "id": "H1",
-    "statement": "The retail build is a GCC of the 3.x line, Allegrex target, built without the debug-C mode, with the library compiled for size.",
-    "measured_cause": "the prologue rule and the library variant are both properties of the compiler and of the library, and both are measured.",
-    "regression_control": "the population of 13 495 bodies, not a sample; and the strcmp, whose source is known.",
-    "falsified_if": "a period-correct GCC 3.x Allegrex, or a faithful port of it, replays neither the prologue rule nor the form of the strcmp.",
-    "verdict": "open: the GCC 3.3 Allegrex is not built yet",
-    "caveat": "the community port brings in the modern Allegrex support, so a compiler rebuilt through it would follow the modern convention. It would falsify the fidelity of the port, not the hypothesis. Only a period-correct binary, or a faithful port, can falsify H1."
-  },
-  "notes": "The measurement is the advance; the qualification is not. What the project now holds is a discriminator that separates the candidates without guessing, and a recipe to build the one that is still standing. See work/TOOLCHAIN/shape.tsv for the table, and work/TOOLCHAIN/scratch/legacy33/RECIPE.md for the recipe."
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "The retail build is a GCC of the 3.x line, Allegrex target, built without the debug-C mode, with the library compiled for size.",
+      "verdict": "NOT CONFIRMED, and not refuted either. A GCC 3.3.6 on a stock mips-elf target, in nine ABI and ISA configurations, replays neither the prologue rule nor the form of the strcmp. But the Allegrex machine description, which is still not built, is precisely what could change both. The clause about the debug-C mode is WITHDRAWN: the idiom is emitted with or without the option, so its absence says nothing about the compiler."
+    },
+    {
+      "id": "H2",
+      "statement": "The retail build is a GCC of the 2.95 line, in the PlayStation 2 EE configuration: o32 calling convention, 64-bit registers, sixteen-byte stack alignment.",
+      "verdict": "OPEN, and it is the sharpest form of the question. The ee-gcc 2.95.2 of the sibling projects reproduces BOTH properties of the retail code - the prologue rule and the thirteen-slot strcmp - and differs on exactly one thing: it uses beql where the retail code uses bnel. Building the SAME configuration on the 3.x line decides between the two lines.",
+      "measured_cause": "the prologue rule is a property of the target configuration, not of the version: MIPS_STACK_ALIGN is 8 for o32 and 16 for n32, and UNITS_PER_WORD is 4 in o32.",
+      "falsified_if": "a GCC 3.x in the PlayStation 2 EE configuration does not produce the thirteen-slot strcmp with the retail form, or does not put $ra last in a sixteen-byte save area."
+    }
+  ],
+  "notes": "The measurement is the advance; the qualification is not. What the project holds is a discriminator that separates the candidates without guessing, a recipe to build each of them, and a name for the configuration the retail code was built with. See work/TOOLCHAIN/shape.tsv and work/H1/shape.tsv for the tables, work/H1/build.md for the recipe, and work/H1/REPORT.md for the detail."
 }
