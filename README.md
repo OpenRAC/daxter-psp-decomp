@@ -23,6 +23,7 @@ inventoried. No function has been matched yet: see [`docs/STATE.md`](docs/STATE.
 | [docs/EVIDENCE.md](docs/EVIDENCE.md) | what counts as a proof, and what does not |
 | [docs/GATES.md](docs/GATES.md) | the three gates: the body gate, the placement gate, the complete-program gate |
 | [docs/STATE.md](docs/STATE.md) | the anchor: where the project stands, and what to do next |
+| [docs/LAYOUT.md](docs/LAYOUT.md) | the **layout**: what a body is, how it is bounded, and what the code is made of |
 | [docs/FORMATS.md](docs/FORMATS.md) | the **disc formats** of the target: `PARAM.SFO`, `~PSP`, `PSAR`, `Pack` |
 | [docs/REUSE.md](docs/REUSE.md) | what to take from the sibling OpenRAC projects, and what not to |
 
@@ -39,7 +40,8 @@ inventoried. No function has been matched yet: see [`docs/STATE.md`](docs/STATE.
 | `config/` | pinned metadata: target identity, toolchain profiles, disc and asset catalogues |
 | `config/disc/` | the container manifest and the Pack index of the pinned disc |
 | `config/levels/` | the asset-container catalogues |
-| `docs/` | the method, the evidence standard, the gates, the formats, the anchor |
+| `config/boot/` | the structure of the executable, its function candidates, its reviewed layout, and the idioms of its code |
+| `docs/` | the method, the evidence standard, the gates, the formats, the layout, the anchor |
 | `work/` | the private workspace: modules, bounds, lots, agent dossiers (git-ignored except the templates) |
 
 ## How Daxter for PSP is actually put together
