@@ -78,14 +78,38 @@ coincidences.
 
 ---
 
-## The order matters
+## Where the project stands
 
 ```
    Gate 0            Gate 1             Gate 2             Gate 3
  visibility  ──►  the body      ──►  every placement  ──►  the program
    (local)          (one body)        (all of them)        (the hash)
       │                │                   │                   │
+      │ PASSED         │ IN PROGRESS       │                   │
       │                └── provisional ─────┘                   │
       │                                                            │
       └───────────── nothing is counted before this ─────────────┘
 ```
+
+**Gate 0 is passed.** The executable is decrypted, measured, and its
+structure published: 661 bodies reviewed and confirmed as functions, 84
+named, and the sweep agreeing with the review on 99,4 per cent of them.
+The layout the body gate needs is therefore in place.
+
+**Gate 1 is the frontier.** The configuration of the retail build is named
+and reproducible, and the pipeline that compiles, links at the retail
+address and compares the bytes is built. What is missing is a body written
+in C that compiles to the retail bytes.
+
+Two things are worth saying about the order, because they are what the
+sibling projects learned the hard way:
+
+* **Gate 1 is the gate that decides everything.** A body that matches at
+  one address and differs at another is not a body. The project would hold
+  a pile of coincidences, and the sibling PS2 projects held exactly that
+  for most of their history.
+* **Gate 2 is where the leverage is.** When two bodies hold the same
+  bytes, one authored source satisfies both — the placement table of this
+  project already holds eight such groups over 661 bodies. A body proved
+  at one place and then found at another is a body that paid for itself
+  twice.
