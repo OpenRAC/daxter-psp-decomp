@@ -138,19 +138,34 @@ built and measured, and neither ever produces one.
 > that the slot count was never a valid discriminator of the compiler.
 > The method caught its own bad test.
 
-**H3 is open, and it is the only configuration left standing.** The retail
-code needs, at the same time:
+**H3 is confirmed.** A GCC 3.3.6 with the stack aligned on **sixteen
+bytes** and words of **four** reproduces the prologue rule of the retail
+code on **157 of 157** bodies, with the saved `$ra` in the same places
+and the same mixed shape.
 
-| | alignment of the stack | width of the save slot |
-| --- | --- | --- |
-| o32 / o64 / eabi | 8 bytes | 4 bytes |
-| n32 / n64 | **16 bytes** | 8 bytes |
-| **the retail code** | **16 bytes** | **4 bytes** |
+Patching `MIPS_STACK_ALIGN` alone does **not** suffice: it gives the
+same frames and the same spread, but places `$ra` elsewhere on the
+**22 per cent** of the bodies whose argument area is not a multiple of
+sixteen. The frame has to be rounded **as a whole** — and that is
+exactly the kind of change the PSPSDK made in its custom Allegrex
+target.
 
-No stock GCC configuration has both. `MIPS_STACK_ALIGN` (mips.h:2876) and
-`UNITS_PER_WORD` (mips.h:1490) are where they come from. The PSPSDK's
-**custom Allegrex target** has both — and it is the configuration the
-retail code was built with.
+So the configuration is named:
+
+> **GCC 3.3.6, o32, stack aligned on sixteen bytes, frame rounded to
+> sixteen as a whole.** The recipe is reproducible, and it is in
+> `work/H3/build.md`.
+
+**And one test is retired, because the method caught its own bad
+test.** The retail `strcmp` has 13 slots, and the PSPSDK's **public**
+newlib — `pspdev/newlib`, branch `allegrex-v4.1.0`, tag
+`newlib-3.3.0-psp` — has a `strcmp.c` **identical** to newlib 1.15.0,
+while its unrolled `machine/mips/strcmp.c` does not match either. **No
+public source produces the 13 slots.** The library of the retail build was
+*patched*, and the number of slots mixes the compiler, the source of the
+library and its options: it cannot eliminate a candidate. The library
+is now the open question, **H4**, and it is a smaller one than the
+compiler was.
 
 ### What wave 3 established
 

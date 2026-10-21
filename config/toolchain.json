@@ -1,6 +1,6 @@
 {
   "id": "none-qualified",
-  "status": "measured",
+  "status": "configuration-identified",
   "scope": "the Allegrex executable of the pinned USA disc",
   "provenance": "No toolchain has been qualified yet. The PS2 siblings could not use a modern GCC for the R5900 either, and they solved it by measuring the register mode of the target; the Allegrex case has to be measured the same way. Waves 2 and 3 measured it, and the measurement discriminates: the rule of the retail code is the rule of a configuration, and the configuration is now named.",
   "measured": {
@@ -19,14 +19,22 @@
     "one_return_per_body": true,
     "one_return_evidence": "the review of wave 1 found exactly one jr $ra per body, at end - 8, with its delay slot at end - 4.",
     "distance_frame_to_save_of_ra": "from 1 to 15 instructions, the mode at 1: the callee-saved registers are usually pushed before the return address.",
-    "library": "the strcmp of the retail code at 0x00245504 is the newlib 1.15 size variant, the one selected by PREFER_SIZE_OVER_SPEED: thirteen instruction slots, no frame, four delay slots all filled with useful code, a signed byte comparison and an unsigned difference, with no masking at all. The library was therefore built with -Os, or with PREFER_SIZE_OVER_SPEED defined."
+    "library": "the strcmp of the retail code at 0x00245504 is the newlib 1.15 size variant, the one selected by PREFER_SIZE_OVER_SPEED: thirteen instruction slots, no frame, four delay slots all filled with useful code, a signed byte comparison and an unsigned difference, with no masking at all. The library was therefore built with -Os, or with PREFER_SIZE_OVER_SPEED defined.",
+    "frame_rounding": "The frame is rounded to sixteen bytes AS A WHOLE, not zone by zone: 11 884 of the 11 894 clean bodies of the retail code satisfy that rule, and only 9 308 satisfy the zone by zone rule. In 2 585 bodies the argument area is not a multiple of sixteen.",
+    "frame_rounding_evidence": "Measured by wave 4 on the retail code and reproduced by the compiler: patching MIPS_STACK_ALIGN alone gives the same frames and the same spread, but places $ra elsewhere on the 22 per cent of the bodies whose argument area is not a multiple of sixteen. Rounding the frame as a whole is what reproduces the retail."
   },
   "candidates": [
     {
       "id": "ee-gcc-2.95.2-ps2ee",
       "kind": "PlayStation 2 Emotion Engine cross compiler, GCC 2.95.2, o32 ABI with 64-bit registers",
       "provenance": "The ee-gcc 2.9-ee-991111 of the sibling PlayStation 2 projects, rebuilt and re-measured by wave 3.",
-      "flags": {"cc1": ["-quiet", "-O2", "-G0"]},
+      "flags": {
+        "cc1": [
+          "-quiet",
+          "-O2",
+          "-G0"
+        ]
+      },
       "status": "candidate",
       "measured_cause": "it is the only compiler measured that reproduces BOTH properties of the retail code: the prologue rule ($ra at frame - 16 in 26 of 26 bodies, 16-byte frames) and the form of the strcmp (13 slots, lb and lbu, no masking).",
       "residual_difference": "its strcmp uses beql where the retail code uses bnel. That is the one difference left, and it is what decides between the 2.95 line and the 3.x line.",
@@ -36,7 +44,16 @@
       "id": "gcc-3.3.6-mips-elf",
       "kind": "GCC 3.3.6 (sourceware releases/gcc-3.3), target mips-elf",
       "provenance": "Built by wave 3 from the sources of the community port, with binutils 2.25.1, gmp 4.3.2, mpfr 2.4.2, mpc 0.8.1 and the newlib 1.15.0 headers. The recipe is reproducible: work/H1/build.md.",
-      "flags": {"cc1": ["-quiet", "-O2", "-G0"], "library": ["-Os"]},
+      "flags": {
+        "cc1": [
+          "-quiet",
+          "-O2",
+          "-G0"
+        ],
+        "library": [
+          "-Os"
+        ]
+      },
       "status": "rejected",
       "measured_cause": "in every one of the nine ABI and ISA configurations it was built for, it fails the prologue rule: o32 and eabi give four-byte slots and eight-byte frames, n32 gives the alignment but eight-byte slots. The strcmp is 17 slots at -Os and 22 at -O2, against the 13 of the retail code.",
       "regression_control": "the corpus of 180 bodies for the prologue, and the exact newlib source for the strcmp."
@@ -78,6 +95,25 @@
       "provenance": "The Allegrex static-recompilation toolkits: sp00nznet/psprecomp, wizardengineer/psprecomp and the psprism toolchain of anthonyhfm/psprism.",
       "status": "candidate",
       "notes": "These recompile rather than decompile. They are the right family of tools for the portability goal, and the wrong tool for the matching goal; they are listed because the project may deliver both, and because the recompilation route is what makes the game playable without the hardware."
+    },
+    {
+      "id": "gcc-3.3.6-o32-stack16-frame16",
+      "kind": "GCC 3.3.6, o32, stack aligned on sixteen bytes, frame rounded to sixteen as a whole",
+      "provenance": "The configuration of the PSPSDK's custom Allegrex target, reached without it: a stock GCC 3.3.6 with MIPS_STACK_ALIGN set to sixteen for o32 in mips.h, and the frame rounded to sixteen as a whole in mips.c. The recipe is reproducible and in work/H3/build.md.",
+      "flags": {
+        "cc1": [
+          "-quiet",
+          "-O2",
+          "-G0"
+        ],
+        "library": [
+          "-Os"
+        ]
+      },
+      "status": "candidate",
+      "measured_cause": "it reproduces the prologue rule of the retail code on 157 of 157 bodies, with the saved $ra in the same places and the same mixed shape, and it emits the branch-likely instructions the retail code holds 6941 of.",
+      "residual_difference": "none known for the prologue. The library is another matter: the retail strcmp has 13 slots and no public newlib source gives 13 slots, so the library the retail build used is a vendor-modified newlib that is not identified yet.",
+      "regression_control": "the population of 13 495 retail bodies, and the 11 894 clean ones for the frame rule."
     }
   ],
   "hypotheses": [
@@ -93,11 +129,18 @@
     },
     {
       "id": "H3",
-      "statement": "The retail build is a GCC of the 3.x line, in the configuration of the PSPSDK's Allegrex target: o32 words, so four-byte save slots, and a stack aligned on sixteen bytes.",
-      "verdict": "OPEN, and it is now the only configuration left standing. The two properties are measured on the retail code: 14655 of the 14656 frame openings are a multiple of 16, and the save area is four bytes wide, which is o32. No stock GCC configuration has both: o32 aligns the stack on 8 and saves in 4 bytes, n32 aligns on 16 and saves in 8. A stock GCC 3.3.6 in the PlayStation 2 EE configuration gives the alignment but eight-byte slots; with -mgp32 it gives the four-byte slots. The PSPSDK's Allegrex target is a custom one that has both, and it is the configuration the retail code was built with.",
-      "measured_cause": "MIPS_STACK_ALIGN (mips.h:2876) is 8 for o32, o64 and eabi, and 16 for n32 and n64; UNITS_PER_WORD (mips.h:1490) is 4 in o32. The retail rule is the combination of an alignment of 16 with words of 4, which stock GCC does not offer.",
-      "falsified_if": "a GCC 3.3.6 whose MIPS_STACK_ALIGN is 16 and whose words are 4 does not reproduce the prologue rule of the retail code on a corpus, with the saved $ra in the same places."
+      "statement": "The retail build is a GCC of the 3.x line, in the configuration of the PSPSDK's custom Allegrex target: o32 words, so four-byte save slots, a stack aligned on sixteen bytes, and the frame rounded to sixteen as a whole.",
+      "verdict": "CONFIRMED. A GCC 3.3.6 with MIPS_STACK_ALIGN at sixteen for o32, and the frame rounded to sixteen as a whole, reproduces the prologue rule of the retail code on 157 of 157 bodies, with the saved $ra in the same places and the same mixed shape. Patching MIPS_STACK_ALIGN alone does not suffice: it gives the same frames and the same spread, but places $ra elsewhere on the 22 per cent of the bodies whose argument area is not a multiple of sixteen.",
+      "measured_cause": "MIPS_STACK_ALIGN (mips.h:2876) is 8 for o32, o64 and eabi, and 16 for n32 and n64; UNITS_PER_WORD (mips.h:1490) is 4 in o32. The retail rule is the combination of an alignment of 16 with words of 4, which stock GCC does not offer, and of a frame rounded as a whole.",
+      "falsified_if": "a GCC 3.3.6 whose stack is aligned on sixteen and whose words are four does not reproduce the prologue rule of the retail code on a corpus, with the saved $ra in the same places. It does."
+    },
+    {
+      "id": "H4",
+      "statement": "The library of the retail build is a vendor-modified newlib: its strcmp has 13 slots, and no public source produces that shape.",
+      "verdict": "OPEN. The PSPSDK's public newlib - pspdev/newlib, branches master and allegrex-v4.1.0, tag newlib-3.3.0-psp - has a strcmp.c IDENTICAL to newlib 1.15.0, and its unrolled machine/mips/strcmp.c does not match either, for it compares without signing. No public source gives the 13 slots of the retail strcmp. The number of slots mixes the compiler, the source of the library and its options, so it cannot eliminate a candidate: the test was bad, and the method caught it. What the retail code shows is that its library was patched.",
+      "measured_cause": "the retail strcmp: 13 slots, four useful delay slots, a signed byte comparison, an unsigned difference, no masking.",
+      "falsified_if": "a public newlib source is found that produces the retail strcmp with the identified compiler."
     }
   ],
-  "notes": "The measurement is the advance; the qualification is not. What the project holds is a discriminator that separates the candidates without guessing, a recipe to build each of them, and a name for the configuration the retail code was built with. The branch-likely count is the decisive one and it is published in config/boot/idioms.json, with the tool that measures it in tools/code_idioms.py. See work/TOOLCHAIN/shape.tsv, work/H1/shape.tsv and work/H2/shape.tsv for the tables, work/H1/build.md and work/H2/build.md for the recipes."
+  "notes": "The configuration is identified. What the project holds is a discriminator that separates the candidates without guessing, a recipe to build each of them, a name for the configuration the retail code was built with, and the measurement that excludes the 2.95 line - the branch-likely count, which needs no compiler at all. What is left is the library: the retail strcmp has 13 slots and no public newlib source gives that shape, so the library of the retail build was patched. See work/TOOLCHAIN/shape.tsv, work/H1, work/H2 and work/H3 for the tables and the recipes."
 }
