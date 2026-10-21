@@ -556,7 +556,7 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x00248C40	0x00248D9C	348	function	func_00248C40	-	high	0x00248D9C	348	yes
 0x0024A2A0	0x0024A54C	684	function	func_0024A2A0	-	high	0x0024A54C	684	yes
 0x0024ABD0	0x0024AC04	52	function	func_0024ABD0	-	high	0x0024AC04	52	yes
-0x0024BFF4	0x0024C1C8	468	function	func_0024BFF4	-	high	0x0024C068	116	no
+0x0024BFF4	0x0024C1C8	468	function	func_0024BFF4	-	high	0x0024C1B4	448	no
 0x0024C478	0x0024C4AC	52	function	func_0024C478	-	high	0x0024C4AC	52	yes
 0x0024D684	0x0024DCB8	1588	function	func_0024D684	-	high	0x0024DCB8	1588	yes
 0x0024F8BC	0x0024F9F4	312	function	Math_RegisterAcosf	la chaine 'acosf' (rodata 0x33DB80) est chargee en 0x24F928 puis stockee avec l'arite 1 dans un descripteur enregistre via jal 0x2580B4 ; le corps verifie le domaine de l'argument (-1..1) ; famille atan2/fmod/sqrt/acosf/asinf/atan2f/fmodf/powf	medium	0x0024F9F4	312	yes

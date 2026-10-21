@@ -140,6 +140,17 @@ class AddressFlow:
         return self._high.get(register)
 
 
+def _signed16(value: int) -> int:
+    """Return a 16-bit immediate, sign extended.
+
+    The immediate of ``addiu`` is signed: ``addiu $a3, $a3, -0xca8`` adds
+    negative 0xca8, not positive 0xff58.  Completing an address with the
+    unsigned value puts it in the wrong page, and the string that is read
+    there is a different one.
+    """
+    return value - 0x10000 if value & 0x8000 else value
+
+
 def addresses(segment: bytes, start: int, end: int,
               load_word) -> list[int]:
     """Return the absolute addresses the body builds.
@@ -157,7 +168,7 @@ def addresses(segment: bytes, start: int, end: int,
         if opcode == 0x24000000:              # addiu rt, rs, imm
             high = flow.high_of(_rs(word))
             if high is not None:
-                found.append((high + (word & 0xFFFF)) & 0xFFFFFFFF)
+                found.append((high + _signed16(word & 0xFFFF)) & 0xFFFFFFFF)
         elif opcode == 0x34000000:            # ori rt, rs, imm
             high = flow.high_of(_rs(word))
             if high is not None:
@@ -165,7 +176,7 @@ def addresses(segment: bytes, start: int, end: int,
         elif opcode == 0x8C000000:            # lw rt, off(rs)
             high = flow.high_of(_rs(word))
             if high is not None:
-                slot = (high + (word & 0xFFFF)) & 0xFFFFFFFF
+                slot = (high + _signed16(word & 0xFFFF)) & 0xFFFFFFFF
                 value = load_word(slot)
                 if value is not None:
                     found.append(value)

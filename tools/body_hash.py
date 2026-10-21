@@ -62,6 +62,8 @@ def main(argv: list[str] | None = None) -> int:
                         default=Path("config/boot/layout.tsv"))
     parser.add_argument("--tsv", action="store_true")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--write", type=Path, default=None,
+                        help="write the placement table to this path")
     args = parser.parse_args(argv)
 
     data = args.elf.read_bytes()
@@ -88,6 +90,20 @@ def main(argv: list[str] | None = None) -> int:
               if len(members) > 1}
     placements = sum(len(members) for members in shared.values())
     distinct = len(groups)
+
+    if args.write:
+        args.write.parent.mkdir(parents=True, exist_ok=True)
+        with args.write.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+            writer.writerow(["sha256", "placements", "starts", "size", "name"])
+            for digest, members in sorted(shared.items(),
+                                          key=lambda kv: -len(kv[1])):
+                writer.writerow([
+                    digest, len(members),
+                    ",".join(member["start"] for member in members),
+                    members[0].get("size", ""),
+                    members[0].get("name", ""),
+                ])
 
     if args.json:
         print(json.dumps({
