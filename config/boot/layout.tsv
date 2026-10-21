@@ -50,9 +50,9 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x000703E4	0x00070410	44	function	func_000703E4	-	high	0x00070410	44	yes
 0x0007044C	0x000705F0	420	function	Aurora_GetErrorMessage	29 chaines 'Aurora: ...' referencees (0x331D20..0x332178); table de 30 entrees a 0x3321F8 indexee par (code - 0x150000); la fonction rend l'adresse de la chaine dans $v0	high	0x000705F0	420	yes
 0x00070A04	0x00070C90	652	function	memcpy	copie octet puis mot avec mise a l'alignement 4 de la destination et table de blocs a 0x3322F0; aucun test de recouvrement, alors que la fonction voisine 0x00070C90 teste src<dst (variante memmove)	high	0x00070C90	652	yes
-0x00071198	0x000711B4	28	function	func_00071198	-	high	0x000711B4	28	yes
-0x000711D0	0x000711EC	28	function	func_000711D0	-	high	0x000711EC	28	yes
-0x000711EC	0x00071208	28	function	func_000711EC	-	high	0x00071208	28	yes
+0x00071198	0x000711B4	28	function	MemAlloc	appelle l'allocateur d'arene 0x00076CA8 avec la taille demandee et rend le bloc ; utilise ainsi par 0x001E0230 (taille 0x66C) ; se trouve juste avant l'ancre 'libs\essentials\cmemory.cpp' (0x00071260)	medium	0x000711B4	28	yes
+0x000711D0	0x000711EC	28	function	MemFree	appelle le liberateur d'arene 0x00076DC8 avec le pointeur a liberer ; appele par ~CFile (0x00099010) sur le descripteur de fichier en +4 et par 0x00026C0E0 sur l'objet lui-meme	medium	0x000711EC	28	yes
+0x000711EC	0x00071208	28	function	MemFree	corps identique octet pour octet a 0x000711D0 (meme liberateur d'arene 0x00076DC8)	medium	0x00071208	28	yes
 0x00073D94	0x00074658	2244	function	func_00073D94	-	high	0x00074658	2244	yes
 0x00075BF8	0x00075FCC	980	function	func_00075BF8	-	high	0x00075FCC	980	yes
 0x00079294	0x00079400	364	function	func_00079294	-	high	0x00079400	364	yes
@@ -341,7 +341,7 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x00258D54	0x00258D98	68	function	func_00258D54	-	high	0x00258D98	68	yes
 0x00258DCC	0x00258E44	120	function	func_00258DCC	-	high	0x00258E44	120	yes
 0x00259374	0x00259490	284	function	func_00259374	-	high	0x00259490	284	yes
-0x0025DE3C	0x0025DED0	148	function	func_0025DE3C	-	high	0x0025DED0	148	yes
+0x0025DE3C	0x0025DED0	148	function	SCREAM_ReportError	chaine de format 'SCREAM Error: cause %d -> %u, %u, %u, %u' (rodata 0x0033E2DC) passee a la sortie variadique 0x00070330 ; les 5 arguments (a0,a1,a2,a3,t0) correspondent a la forme '%d -> %u, %u, %u, %u'	medium	0x0025DED0	148	yes
 0x00260200	0x00260614	1044	function	func_00260200	-	high	0x00260614	1044	yes
 0x00260D90	0x0026106C	732	function	func_00260D90	-	high	0x0026106C	732	yes
 0x00261478	0x002614A0	40	function	func_00261478	-	high	0x002614A0	40	yes
@@ -351,7 +351,7 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x00265B64	0x00265CB0	332	function	func_00265B64	-	high	0x00265CB0	332	yes
 0x00266994	0x00266C14	640	function	func_00266994	-	high	0x00266C14	640	yes
 0x00266C14	0x00266E94	640	function	func_00266C14	-	high	0x00266E94	640	yes
-0x00266E94	0x00266FF0	348	function	func_00266E94	-	high	0x00266FF0	348	yes
+0x00266E94	0x00266FF0	348	function	SCREAM_LockMasterTick	chaine 'SCREAM: LockMasterTick called with interrupts disabled (0x%8.8x)!!!' (0x0033E8B0) ; chaines 'Tick Owner list:' (0x0033E938) et 'VAlloc Owner : 0x%8.8x' (0x0033E984) ; le corps depose le tick owner courant dans la table a 0x00351160 (compteur a 0x0035115C)	medium	0x00266FF0	348	yes
 0x00266FF0	0x002670C8	216	function	func_00266FF0	-	high	0x002670C8	216	yes
 0x00267184	0x002674CC	840	function	func_00267184	-	high	0x0026730C	392	no
 0x0026768C	0x002677D4	328	function	LockVoiceAllocator	le message lu par 0x00267800 nomme le verrou 'Voice Allocator' ; memes globales 0x34F1F0/0x34F1F8/0x34F1FC ; appel 0x0026768C avant 0x00267800 dans 0x25E13C	medium	0x002677D4	328	yes
@@ -380,7 +380,7 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x00272B20	0x00272BAC	140	function	func_00272B20	-	high	0x00272BAC	140	yes
 0x00272F20	0x00272FB4	148	function	func_00272F20	-	high	0x00272FB4	148	yes
 0x00272FB4	0x00273040	140	function	func_00272FB4	-	high	0x00273040	140	yes
-0x00274C18	0x00274C58	64	function	func_00274C18	-	high	0x00274C58	64	yes
+0x00274C18	0x00274C58	64	function	vsprintf	construit une va_list a sp+0x28 a partir de $a2,$a3,$t0..$t3 puis appelle le formateur 0x00244144 avec (dest, format, va_list) - exactement la forme a 3 arguments utilisee par l'aide d'assert 0x0007035C	medium	0x00274C58	64	yes
 0x00276080	0x002760D8	88	function	func_00276080	-	high	0x002760D8	88	yes
 0x002760D8	0x00276130	88	function	func_002760D8	-	high	0x00276130	88	yes
 0x00278DA8	0x00278E00	88	function	func_00278DA8	-	high	0x00278E00	88	yes

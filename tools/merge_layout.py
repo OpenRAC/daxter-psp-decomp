@@ -51,6 +51,21 @@ def read_sweep(path: Path) -> dict[str, dict[str, str]]:
     return {row["start"]: row for row in rows if row.get("start")}
 
 
+def canonical(address: str) -> str:
+    """Return an address in the one form the repository uses.
+
+    The lots of the wave were written by different hands, and not all of
+    them padded the address the same way: one wrote ``0x00274C18`` and
+    another ``0x000274C18``.  They are the same address, and the merge
+    has to see that, or it counts a body twice and drops the names that
+    go with it.
+    """
+    try:
+        return f"0x{int(address, 16):08X}"
+    except (TypeError, ValueError):
+        return address
+
+
 def build_identifiers() -> set[str]:
     """Return the strings of the build that are not function names.
 
@@ -102,7 +117,8 @@ def merge(work: Path, out: Path) -> dict[str, object]:
 
     for lot in lots:
         for row in read_lot(lot):
-            start = row["start"]
+            start = canonical(row["start"])
+            end = canonical(row.get("end", ""))
             if start in seen:
                 # Two lots reviewed the same body.  The review is the
                 # truth, and it is the same truth; keep the first and say
@@ -110,7 +126,7 @@ def merge(work: Path, out: Path) -> dict[str, object]:
                 duplicates += 1
                 continue
             seen[start] = 1
-            end = row.get("end", "")
+            end = canonical(row.get("end", "")) if row.get("end") else ""
             size = row.get("size", "")
             klass = row.get("class", "unknown")
             name = row.get("name", "") or f"func_{start.replace('0x', '')}"
@@ -154,7 +170,7 @@ def merge(work: Path, out: Path) -> dict[str, object]:
     identifiers = build_identifiers()
     for source in (work / "ASSERT" / "names.tsv", work / "NAMES" / "names.tsv"):
         for row in read_named(source):
-            start = row["start"]
+            start = canonical(row["start"])
             target = next((item for item in merged if item["start"] == start), None)
             if target is None:
                 continue
