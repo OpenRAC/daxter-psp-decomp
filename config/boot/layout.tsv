@@ -1,74 +1,236 @@
 start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_agrees
 0x00000BFC	0x00000C28	44	function	func_00000BFC	-	high	0x00000C28	44	yes
+0x000039F0	0x00003A34	68	function	func_000039F0	-	high	0x00003A34	68	yes
+0x00004408	0x00004434	44	function	func_00004408	-	high	0x00004434	44	yes
 0x00004494	0x00004558	196	function	func_00004494	-	high	0x00004558	196	yes
 0x00004A28	0x00004B78	336	function	func_00004A28	-	high	0x00004B78	336	yes
+0x00004DCC	0x00004E00	52	function	func_00004DCC	-	high	0x00004E00	52	yes
 0x00004E00	0x00004E2C	44	function	func_00004E00	-	high	0x00004E2C	44	yes
+0x000056D0	0x000057AC	220	function	func_000056D0	-	high	0x000057AC	220	yes
 0x00006AC8	0x00006AEC	36	function	func_00006AC8	-	high	0x00006AEC	36	yes
+0x00006D8C	0x00006E20	148	function	func_00006D8C	-	high	0x00006E20	148	yes
+0x00007424	0x000074B8	148	function	func_00007424	-	high	0x000074B8	148	yes
+0x00008070	0x00008440	976	function	func_00008070	-	high	0x00008440	976	yes
+0x00008A7C	0x00008DB4	824	function	func_00008A7C	-	high	0x00008DB4	824	yes
+0x00008E8C	0x000090F0	612	function	func_00008E8C	-	high	0x000090F0	612	yes
+0x0000943C	0x000094BC	128	function	func_0000943C	-	high	0x000094BC	128	yes
 0x000094F0	0x00009520	48	function	func_000094F0	-	high	0x00009520	48	yes
+0x00009520	0x00009544	36	function	func_00009520	-	high	0x00009544	36	yes
 0x00009630	0x00009664	52	function	func_00009630	-	high	0x00009664	52	yes
+0x00009670	0x00009698	40	function	func_00009670	-	high	0x00009698	40	yes
+0x0000972C	0x00009750	36	function	func_0000972C	-	high	0x00009750	36	yes
+0x00009750	0x000097A4	84	function	func_00009750	-	high	0x000097A4	84	yes
+0x000097A4	0x000097C8	36	function	func_000097A4	-	high	0x000097C8	36	yes
+0x000097C8	0x000097F8	48	function	func_000097C8	-	high	0x000097F8	48	yes
+0x00009928	0x0000994C	36	function	func_00009928	-	high	0x0000994C	36	yes
 0x0000A0B0	0x0000A0E4	52	function	func_0000A0B0	-	high	0x0000A0E4	52	yes
+0x0000A0E4	0x0000A11C	56	function	func_0000A0E4	-	high	0x0000A11C	56	yes
+0x0000A11C	0x0000A16C	80	function	func_0000A11C	-	high	0x0000A16C	80	yes
+0x0000A264	0x0000A288	36	function	func_0000A264	-	high	0x0000A288	36	yes
+0x0000A288	0x0000A328	160	function	func_0000A288	-	high	0x0000A328	160	yes
 0x0000A328	0x0000A39C	116	function	func_0000A328	-	high	0x0000A39C	116	yes
+0x0000A424	0x0000A454	48	function	func_0000A424	-	high	0x0000A454	48	yes
+0x0000A454	0x0000A478	36	function	func_0000A454	-	high	0x0000A478	36	yes
+0x0000A478	0x0000A4B4	60	function	func_0000A478	-	high	0x0000A4B4	60	yes
+0x0000ADE4	0x0000AEB8	212	function	func_0000ADE4	-	high	0x0000AEB8	212	yes
 0x0000AEB8	0x0000AF30	120	function	func_0000AEB8	-	high	0x0000AF30	120	yes
 0x0000C990	0x0000D1C0	2096	function	func_0000C990	-	high	0x0000D1C0	2096	yes
 0x0000D72C	0x0000D8D8	428	function	func_0000D72C	-	high	0x0000D8D8	428	yes
+0x0000DC98	0x0000DFC4	812	function	func_0000DC98	-	high	0x0000DFC4	812	yes
 0x0000E1CC	0x0000E360	404	function	func_0000E1CC	-	high	0x0000E360	404	yes
+0x0000E6E0	0x0000E868	392	function	func_0000E6E0	-	high	0x0000E868	392	yes
 0x0000E868	0x0000EAA8	576	function	func_0000E868	-	high	0x0000EAA8	576	yes
+0x0000ECD8	0x0000ED1C	68	function	func_0000ECD8	-	high	0x0000ED1C	68	yes
+0x000111F4	0x00011208	20	function	func_000111F4	-	high	0x00011208	20	yes
+0x000117F8	0x000119D4	476	function	savedata_param_init	chaines lues par le corps et copiees dans le descripteur statique a 0x70038F8 : 'UCUS98618' (0x0034057C, id de titre), 'DATA00' (0x003400CA, chemin), 'Save Game Data' (0x003400EC) et 'Settings and Game Progress' (0x0034016C) (libelles), 'Encrypt1Me2Plz3' (0x0034056C, cle) ; le corps est le prologue commun des quatre modes de l'API savedata poses en +0x30 du descripteur : 5 par 0x000119D4, 4 par 0x00011AB0, 1 par 0x00011BCC, 0 par 0x00011C0C	medium	0x000119D4	476	yes
+0x00011C44	0x00011F80	828	function	savedata_dispatch	le corps compose le nom de fichier 'SECURE.BIN' ('SECURE' a 0x0032FAFC + '.' + 'BIN' a 0x003400B8) puis route l'operation sur le descripteur a 0x70038F8 : mode 5 (0x000119D4), mode 4 (0x00011780+0x00011AB0), mode 1 (0x00011B8C+0x00011BCC) ou mode 0 (0x00011B8C+0x00011C0C)	low	0x00011F80	828	yes
+0x00012BBC	0x00012BF0	52	function	func_00012BBC	-	high	0x00012BF0	52	yes
+0x00013A5C	0x00013AD4	120	function	func_00013A5C	-	high	0x00013AD4	120	yes
 0x000149A0	0x00014A18	120	function	random_float01	appelle mt19937_genrand (0x0008DFB8) ; le tirage est masque par 0x7FFFFFFF puis force a 0x3F800000 (flottant dans [1,2)) et 1.0f (0x3F800000) est soustrait : flottant de [0,1)	high	0x00014A18	120	yes
 0x00014EB4	0x00015104	592	function	func_00014EB4	-	high	0x00015104	592	yes
 0x00016600	0x000170B4	2740	function	func_00016600	-	high	0x000170B4	2740	yes
 0x000173EC	0x000175D8	492	function	func_000173EC	-	high	0x000175D8	492	yes
 0x000175D8	0x00017A40	1128	function	func_000175D8	-	high	0x00017A40	1128	yes
+0x00017A40	0x000183A0	2400	function	func_00017A40	-	high	0x000183A0	2400	yes
+0x0001A94C	0x0001B598	3148	function	func_0001A94C	-	high	0x0001B598	3148	yes
+0x0001CF14	0x0001DB44	3120	function	func_0001CF14	-	high	0x0001DB44	3120	yes
+0x0001DCAC	0x0001E390	1764	function	func_0001DCAC	-	high	0x0001E390	1764	yes
+0x0001E390	0x0001E8E0	1360	function	func_0001E390	-	high	0x0001E8E0	1360	yes
+0x0001E8E0	0x0001EB3C	604	function	func_0001E8E0	-	high	0x0001EB3C	604	yes
+0x0001F2B8	0x0001F4F0	568	function	func_0001F2B8	-	high	0x0001F4F0	568	yes
+0x0002061C	0x00020688	108	function	func_0002061C	-	high	0x00020688	108	yes
+0x00020748	0x00021424	3292	function	LoadFromAPS	helper d'assert 0x7035C : $a3 = 'LoadFromAPS' (0x340833), $a1 = libs\elements3d\cverletsystem.cpp, $a2 = l.3795/3804, 4 sites apres les appels 0x151B0/0x15324 appeles seulement par ce corps = asserts propres du corps ; les 22 autres sites ($a3='~CFileCm', cfilecm.h l.140) sont le destructeur CFileCm::~CFileCm inline (identique a 0x00297C9C, entree de la table virtuelle 0x353338 : drapeau 0x735C, tampon 0x73350, jal 0x9D6A0/0x99010), duplique sur les 22 sorties de portee	medium	0x00021424	3292	yes
+0x00021724	0x000219A4	640	function	func_00021724	-	high	0x000219A4	640	yes
 0x000219A4	0x00021EA4	1280	function	func_000219A4	-	high	0x00021EA4	1280	yes
+0x00023780	0x000238D0	336	function	func_00023780	-	high	0x000238D0	336	yes
 0x000238D0	0x00023970	160	function	property_get_int	acceseur de propriete : resout l'indice par 0x00023780 puis teste le tag de type 1 (ori $a2,$zero,1) et rend la valeur 32 bits lue dans la table a +0x498	medium	0x00023970	160	yes
 0x00023970	0x00023A10	160	function	property_get_int	corps identique octet pour octet a 0x000238D0 (meme acceseur de propriete, tag de type 1)	medium	0x00023A10	160	yes
 0x00023A10	0x00023AAC	156	function	property_get_float	acceseur de propriete : resout l'indice par 0x00023780 puis teste le tag de type 2 (ori $a2,$zero,2) et rend un flottant (lwc1) lu dans la table a +0x4B8	medium	0x00023AAC	156	yes
 0x00023AAC	0x00023B44	152	function	func_00023AAC	-	high	0x00023B44	152	yes
+0x00023B44	0x00023C50	268	function	func_00023B44	-	high	0x00023C50	268	yes
 0x00023C50	0x00023D24	212	function	property_get_point	acceseur de propriete : resout l'indice par 0x00023780 puis teste le tag de type 5 (ori $a2,$zero,5) et rend trois flottants (lwc1 x3) de la table a +0x4F8	medium	0x00023D24	212	yes
 0x00023D9C	0x00023E14	120	function	property_get_ushort	acceseur de propriete : resout l'indice par 0x00023780 puis teste le tag de type 6 (ori $a2,$zero,6) et rend un u16 (lhu)	medium	0x00023E14	120	yes
+0x00024790	0x000251AC	2588	function	func_00024790	-	high	0x000251AC	2588	yes
 0x00025D04	0x00025FA0	668	function	func_00025D04	-	high	0x00025FA0	668	yes
 0x00026118	0x0002647C	868	function	func_00026118	-	high	0x0002647C	868	yes
+0x00026498	0x000265A4	268	function	func_00026498	-	high	0x000265A4	268	yes
+0x000265A4	0x000265F0	76	function	func_000265A4	-	high	0x000265F0	76	yes
 0x0002669C	0x00026C48	1452	function	func_0002669C	-	high	0x00026C48	1452	yes
+0x0002BAE4	0x0002BDB0	716	function	func_0002BAE4	-	high	0x0002BDB0	716	yes
+0x0002C6C8	0x0002C6E4	28	function	func_0002C6C8	-	high	0x0002C6E4	28	yes
+0x0002CE7C	0x0002CF34	184	function	func_0002CE7C	-	high	0x0002CF34	184	yes
+0x0002D698	0x0002D830	408	function	func_0002D698	-	high	0x0002D830	408	yes
+0x0002D830	0x0002E090	2144	function	func_0002D830	-	high	0x0002E090	2144	yes
+0x0002E140	0x0002EB8C	2636	function	func_0002E140	-	high	0x0002EB8C	2636	yes
+0x00030044	0x00030350	780	function	func_00030044	-	high	0x00030350	780	yes
+0x000327C8	0x00032B1C	852	function	func_000327C8	-	high	0x00032B1C	852	yes
+0x0003303C	0x00033218	476	function	func_0003303C	-	high	0x00033218	476	yes
+0x00033218	0x0003322C	20	function	func_00033218	-	high	0x0003322C	20	yes
+0x0003322C	0x00033294	104	function	func_0003322C	-	high	0x00033294	104	yes
+0x00034788	0x000347B4	44	function	func_00034788	-	high	0x000347B4	44	yes
 0x000347B4	0x00034930	380	function	func_000347B4	-	high	0x00034930	380	yes
 0x00034930	0x00034B80	592	function	func_00034930	-	high	0x00034B80	592	yes
 0x000354FC	0x00035B7C	1664	function	func_000354FC	-	high	0x00035B7C	1664	yes
 0x00037BC4	0x00037C4C	136	function	func_00037BC4	-	high	0x00037C4C	136	yes
+0x00037C4C	0x00037D78	300	function	func_00037C4C	-	high	0x00037D78	300	yes
 0x00037D78	0x00037F98	544	function	func_00037D78	-	high	0x00037F98	544	yes
+0x00038520	0x00038598	120	function	func_00038520	-	high	0x00038598	120	yes
+0x0003AA68	0x0003AF44	1244	function	func_0003AA68	-	high	0x0003AF44	1244	yes
+0x0003C474	0x0003C6E4	624	function	func_0003C474	-	high	0x0003C6E4	624	yes
+0x0003CA2C	0x0003CDD8	940	function	func_0003CA2C	-	high	0x0003CDD8	940	yes
+0x0003CEC4	0x0003D034	368	function	func_0003CEC4	-	high	0x0003D034	368	yes
+0x0003DAB8	0x0003DBB8	256	function	func_0003DAB8	-	high	0x0003DBB8	256	yes
+0x0003FC68	0x0004051C	2228	function	func_0003FC68	-	high	0x0004051C	2228	yes
+0x00042028	0x00042260	568	function	func_00042028	-	high	0x00042260	568	yes
+0x000452E0	0x00045DAC	2764	function	func_000452E0	-	high	0x00045DAC	2764	yes
+0x00047D98	0x000480F8	864	function	func_00047D98	-	high	0x000480F8	864	yes
+0x0004BC70	0x0004C0B0	1088	function	func_0004BC70	-	high	0x0004C0B0	1088	yes
+0x0004F528	0x0004F8E8	960	function	func_0004F528	-	high	0x0004F8E8	960	yes
 0x0004FDA0	0x000501BC	1052	function	func_0004FDA0	-	high	0x000501BC	1052	yes
 0x00052944	0x00052A38	244	function	func_00052944	-	high	0x00052A38	244	yes
+0x000535B0	0x00053608	88	function	func_000535B0	-	high	0x00053608	88	yes
 0x00053828	0x000538F0	200	function	func_00053828	-	high	0x000538F0	200	yes
 0x00053A2C	0x00053AD0	164	function	func_00053A2C	-	high	0x00053AD0	164	yes
 0x00053AD0	0x00053B78	168	function	func_00053AD0	-	high	0x00053B78	168	yes
 0x00053B78	0x00053C08	144	function	func_00053B78	-	high	0x00053C08	144	yes
 0x00053C08	0x00053C98	144	function	func_00053C08	-	high	0x00053C98	144	yes
+0x00054404	0x00054448	68	function	func_00054404	-	high	0x00054448	68	yes
+0x00054638	0x00054744	268	function	func_00054638	-	high	0x00054744	268	yes
+0x00054744	0x00054850	268	function	func_00054744	-	high	0x00054850	268	yes
+0x00055FF0	0x000560FC	268	function	func_00055FF0	-	high	0x000560FC	268	yes
+0x00057950	0x00057B70	544	function	func_00057950	-	high	0x00057B70	544	yes
+0x0005A09C	0x0005A368	716	function	func_0005A09C	-	high	0x0005A368	716	yes
+0x0005D0C0	0x0005D138	120	function	func_0005D0C0	-	high	0x0005D138	120	yes
 0x0005D138	0x0005D21C	228	function	func_0005D138	-	high	0x0005D21C	228	yes
+0x0005D3BC	0x0005D500	324	function	func_0005D3BC	-	high	0x0005D500	324	yes
+0x0005D500	0x0005D600	256	function	func_0005D500	-	high	0x0005D600	256	yes
+0x0005D600	0x0005D844	580	function	func_0005D600	-	high	0x0005D844	580	yes
 0x0005D884	0x0005DFD0	1868	function	SetupPhysicsFromFileCm	corrects CNodeXD_CFileCm; l'assert 0x0007035C du site 0x0005DD60 passe $a3 = 0x003410B6 = 'SetupPhysicsFromFileCm' (le __FUNCTION__) et $a1 = 0x00331550 = 'libs\elementsxd\cnodexd.cpp' ; les 12 autres asserts du corps portent des tampons de nom '~COpenFileCm' (0x00073360) et '~CFileCm' (0x00073350), c'est-a-dire du code inline	high	0x0005DFD0	1868	yes
 0x0005DFD0	0x0005E28C	700	function	func_0005DFD0	-	high	0x0005E28C	700	yes
+0x0005F008	0x0005F4BC	1204	function	func_0005F008	-	high	0x0005F4BC	1204	yes
+0x0005F4BC	0x0005F950	1172	function	func_0005F4BC	-	high	0x0005F950	1172	yes
 0x00060864	0x000609DC	376	function	func_00060864	-	high	0x000609DC	376	yes
+0x000609DC	0x00060B54	376	function	func_000609DC	-	high	0x00060B54	376	yes
+0x00060B54	0x00060CF0	412	function	func_00060B54	-	high	0x00060CF0	412	yes
+0x00061B00	0x00061B14	20	function	func_00061B00	-	high	0x00061B14	20	yes
+0x00061B54	0x00061BBC	104	function	func_00061B54	-	high	0x00061BBC	104	yes
+0x00061BBC	0x00061BF8	60	function	func_00061BBC	-	high	0x00061BF8	60	yes
+0x00061FA0	0x0006299C	2556	function	func_00061FA0	-	high	0x0006299C	2556	yes
+0x00062D20	0x00063008	744	function	Swap	assert 0x0007035C (sites 0x00062E10, 0x00062E80, 0x00062EE8) : $a3 = 0x003414E8 = 'Swap' ; le corps lit aussi le chemin source 'libs\sgl\sgl.base.psp.cpp' (0x00331A04) -> module sgl	high	0x00063008	744	yes
+0x00063064	0x00063340	732	function	func_00063064	-	high	0x00063340	732	yes
+0x00063A10	0x00063E34	1060	function	func_00063A10	-	high	0x00063E34	1060	yes
+0x0006490C	0x00064BF0	740	function	func_0006490C	-	high	0x00064BF0	740	yes
+0x00065CC8	0x0006632C	1636	function	func_00065CC8	-	high	0x0006632C	1636	yes
+0x0006632C	0x0006638C	96	function	func_0006632C	-	high	0x0006638C	96	yes
+0x0006638C	0x000663E8	92	function	func_0006638C	-	high	0x000663E8	92	yes
+0x00066444	0x00066870	1068	function	func_00066444	-	high	0x00066870	1068	yes
+0x00066870	0x000669E4	372	function	func_00066870	-	high	0x000669E4	372	yes
+0x00066F00	0x000676E4	2020	function	func_00066F00	-	high	0x000676E4	2020	yes
+0x00067790	0x00067AA4	788	function	func_00067790	-	high	0x00067AA4	788	yes
+0x0006830C	0x000684F0	484	function	func_0006830C	-	high	0x000684F0	484	yes
+0x00068D8C	0x00068FE0	596	function	func_00068D8C	-	high	0x00068FE0	596	yes
+0x000691D4	0x00069738	1380	function	func_000691D4	-	high	0x00069738	1380	yes
+0x0006988C	0x00069EB4	1576	function	func_0006988C	-	high	0x00069EB4	1576	yes
+0x00069EB4	0x0006A1C8	788	function	func_00069EB4	-	high	0x0006A1C8	788	yes
+0x0006B9A4	0x0006BAB4	272	function	func_0006B9A4	-	high	0x0006BAB4	272	yes
+0x0006C040	0x0006C1C4	388	function	func_0006C040	-	high	0x0006C1C4	388	yes
+0x0006D204	0x0006D43C	568	function	func_0006D204	-	high	0x0006D43C	568	yes
+0x0006DE90	0x0006DFB8	296	function	text_find_by_id	lit 'TEXT %d NOT FOUND' (0x00331BD0) ; recherche binaire (0x0006BFA4, comparateur 0x0006DE84) dans la table des textes a 16 octets ; l'identifiant manquant est memorise en 0x0034162C	medium	0x0006DFB8	296	yes
+0x0006E0B8	0x0006E160	168	function	utf8_decode_next	decodage UTF-8 canonique : 1/2/3/4 octets selon 0xxxxxxx/110xxxxx/1110xxxx/11110xxx, octets de continuation verifies (b & 0xC0) == 0x80, valeur ramenee a 16 bits, 0xFFFF a l'erreur, pointeur avance	medium	0x0006E160	168	yes
+0x0006E95C	0x0006F278	2332	function	func_0006E95C	-	high	0x0006F278	2332	yes
 0x0006F2FC	0x0006F344	72	function	func_0006F2FC	-	high	0x0006F344	72	yes
+0x0006F344	0x0006F3E8	164	function	text_format	appelle la recherche de texte 0x0006DE90 puis le formateur variadique 0x000244144 (dest, format, va_list) dont la va_list est construite depuis $a1..$t3 et $f12/$f13	medium	0x0006F3E8	164	yes
+0x0006F400	0x0006F41C	28	function	func_0006F400	-	high	0x0006F41C	28	yes
+0x0006F41C	0x0006F458	60	function	func_0006F41C	-	high	0x0006F458	60	yes
+0x0006F790	0x0006F7AC	28	function	func_0006F790	-	high	0x0006F7AC	28	yes
+0x0006F91C	0x0006FADC	448	function	func_0006F91C	-	high	0x0006FADC	448	yes
+0x0006FADC	0x0006FCF8	540	function	func_0006FADC	-	high	0x0006FCF8	540	yes
+0x0006FF6C	0x0006FF80	20	function	func_0006FF6C	-	high	0x0006FF80	20	yes
 0x00070330	0x0007035C	44	function	Aurora_Printf	corps variadique : $a1,$a2,$a3,$t0..$t3 sont empiles puis la fonction rend 0 ; ~90 sites d'appel (0x0025BD98, 0x00260650, 0x00266740...) lui passent des chaines de format de diagnostic ; il precede immediatement l'aide d'assert 0x0007035C	medium	0x0007035C	44	yes
 0x0007035C	0x000703E4	136	function	func_0007035C	-	high	0x000703E4	136	yes
 0x000703E4	0x00070410	44	function	func_000703E4	-	high	0x00070410	44	yes
 0x0007044C	0x000705F0	420	function	Aurora_GetErrorMessage	29 chaines 'Aurora: ...' referencees (0x331D20..0x332178); table de 30 entrees a 0x3321F8 indexee par (code - 0x150000); la fonction rend l'adresse de la chaine dans $v0	high	0x000705F0	420	yes
+0x0007082C	0x00070A04	472	function	func_0007082C	-	high	0x00070A04	472	yes
 0x00070A04	0x00070C90	652	function	memcpy	copie octet puis mot avec mise a l'alignement 4 de la destination et table de blocs a 0x3322F0; aucun test de recouvrement, alors que la fonction voisine 0x00070C90 teste src<dst (variante memmove)	high	0x00070C90	652	yes
 0x00071198	0x000711B4	28	function	MemAlloc	appelle l'allocateur d'arene 0x00076CA8 avec la taille demandee et rend le bloc ; utilise ainsi par 0x001E0230 (taille 0x66C) ; se trouve juste avant l'ancre 'libs\essentials\cmemory.cpp' (0x00071260)	medium	0x000711B4	28	yes
+0x000711B4	0x000711D0	28	function	MemAlloc	corps identique octet pour octet a 0x00071198 (MemAlloc de la revue) ; meme appel a l'allocateur d'arene 0x00076CA8	high	0x000711D0	28	yes
 0x000711D0	0x000711EC	28	function	MemFree	appelle le liberateur d'arene 0x00076DC8 avec le pointeur a liberer ; appele par ~CFile (0x00099010) sur le descripteur de fichier en +4 et par 0x00026C0E0 sur l'objet lui-meme	medium	0x000711EC	28	yes
 0x000711EC	0x00071208	28	function	MemFree	corps identique octet pour octet a 0x000711D0 (meme liberateur d'arene 0x00076DC8)	medium	0x00071208	28	yes
+0x000719C4	0x00071A2C	104	function	func_000719C4	-	high	0x00071A2C	104	yes
+0x00071FA4	0x000720BC	280	function	func_00071FA4	-	high	0x000720BC	280	yes
 0x00073D94	0x00074658	2244	function	func_00073D94	-	high	0x00074658	2244	yes
 0x00075BF8	0x00075FCC	980	function	func_00075BF8	-	high	0x00075FCC	980	yes
+0x00076CA8	0x00076D30	136	function	arena_alloc	la revue nomme 0x00076CA8 'l'allocateur d'arene' (appelant 0x00071198 MemAlloc) ; sentinelle 0xDEAEBEEF, init 0x00071480(0x400), compteur a +0x14	medium	0x00076D30	136	yes
+0x00076DC8	0x00076E2C	100	function	arena_free	la revue nomme 0x00076DC8 'le liberateur d'arene' (appelant 0x000711D0 MemFree) ; taille du bloc lue a -4(pointeur), compteur a +0x14	medium	0x00076E2C	100	yes
+0x000770A8	0x00077140	152	function	arena_alloc_aligned	meme corps que 0x00076CA8 (sentinelle 0xDEAEBEEF, compteur a +0x14) mais un argument de plus, passe a 0x00076A20 ; le site 0x0006BB58 passe 16 (alignement) et la taille	medium	0x00077140	152	yes
+0x00077140	0x0007715C	28	function	MemFree	corps identique octet pour octet a 0x000711EC (MemFree de la revue) ; meme libérateur d'arene 0x00076DC8	high	0x0007715C	28	yes
+0x000775FC	0x0007767C	128	function	func_000775FC	-	high	0x0007767C	128	yes
+0x000777D4	0x0007780C	56	function	func_000777D4	-	high	0x0007780C	56	yes
+0x00078BA0	0x00078C00	96	function	func_00078BA0	-	high	0x00078C00	96	yes
 0x00079294	0x00079400	364	function	func_00079294	-	high	0x00079400	364	yes
+0x00079928	0x00079A0C	228	function	func_00079928	-	high	0x00079A0C	228	yes
+0x0007A960	0x0007AD90	1072	function	CThreadData::PutFile	assert : l'appel 0x0007035C du site 0x0007AD2C passe $a3 = 'PutFile' ; le corps lit le chemin 'libs\thread\cthreaddata.psp.cpp' (0x00332E98), source que modules.tsv attribue a libs\thread	medium	0x0007AD90	1072	yes
+0x0007B7C8	0x0007B7E8	32	function	func_0007B7C8	-	high	0x0007B7E8	32	yes
 0x0007B7E8	0x0007B824	60	function	func_0007B7E8	-	high	0x0007B824	60	yes
+0x0007B824	0x0007B844	32	function	func_0007B824	-	high	0x0007B844	32	yes
 0x0007B844	0x0007B880	60	function	func_0007B844	-	high	0x0007B880	60	yes
+0x0007CE44	0x0007CFCC	392	function	func_0007CE44	-	high	0x0007CFCC	392	yes
+0x0007CFCC	0x0007D034	104	function	func_0007CFCC	-	high	0x0007D034	104	yes
 0x0007D09C	0x0007D150	180	function	func_0007D09C	-	high	0x0007D150	180	yes
+0x0007D258	0x0007D2A0	72	function	func_0007D258	-	high	0x0007D2A0	72	yes
+0x0007D34C	0x0007D3E8	156	function	func_0007D34C	-	high	0x0007D3E8	156	yes
+0x000805B4	0x000805E4	48	function	func_000805B4	-	high	0x000805E4	48	yes
+0x000805E4	0x00080674	144	function	func_000805E4	-	high	0x00080674	144	yes
+0x00080674	0x00080720	172	function	func_00080674	-	high	0x00080720	172	yes
+0x000823A0	0x0008241C	124	function	func_000823A0	-	high	0x0008241C	124	yes
 0x0008246C	0x00082488	28	function	func_0008246C	-	high	0x00082488	28	yes
+0x00082544	0x00082590	76	function	matrix3x3_determinant	formule exacte du determinant 3x3 aei+bfg+cdh-ceg-bdi-afh sur 9 flottants (f12..f19 et la pile)	high	0x00082590	76	yes
 0x000828EC	0x00082A7C	400	function	func_000828EC	-	high	0x00082A7C	400	yes
+0x00082DD0	0x00082E58	136	function	vector3_transform_3x4	matrice 4 colonnes x 3 lignes (12 flottants) x vecteur 3 (f12,f13,f14) ; la 4e colonne est la translation ; le resultat est ecrit dans la matrice	medium	0x00082E58	136	yes
+0x00082E58	0x00082ED0	120	function	matrix3x3_scale_columns	chaque colonne de la matrice 3x3 ($a0) est multipliee par f12, f13, f14	medium	0x00082ED0	120	yes
+0x00083008	0x0008315C	340	function	func_00083008	-	high	0x0008315C	340	yes
+0x00083378	0x00083454	220	function	matrix3x3_determinant_cofactor	developpement du determinant 3x3 sur la 1re ligne ; chaque mineur 2x2 est calcule par 0x00082544	high	0x00083454	220	yes
+0x000839E8	0x00083B4C	356	function	func_000839E8	-	high	0x00083B4C	356	yes
 0x00084380	0x00084414	148	function	func_00084380	-	high	0x00084414	148	yes
+0x000846AC	0x00084764	184	function	vector3_transform_3x4	matrice 4 colonnes x 3 lignes x vecteur 3 ; le resultat est ecrit dans le vecteur puis recopie dans ($a0)	medium	0x00084764	184	yes
 0x00084764	0x000847B0	76	function	func_00084764	-	high	0x000847B0	76	yes
+0x00084FD0	0x000851EC	540	function	func_00084FD0	-	high	0x000851EC	540	yes
 0x00085464	0x00085564	256	function	func_00085464	-	high	0x00085564	256	yes
+0x00085C78	0x00085D0C	148	function	vector3_transform_4x4	matrice 4x4 (16 flottants) x vecteur 3 avec w=1 ; la 4e colonne est la translation ; le resultat (3 flottants) est ecrit dans ($a0)	medium	0x00085D0C	148	yes
+0x00085DA0	0x00085E74	212	function	matrix4x4_mul_vector4	produit matrice 4x4 par vecteur 4 : out[i] = somme_j M[j][i]*v[j] sur 16 flottants ; resultat de 4 flottants dans ($a0)	high	0x00085E74	212	yes
+0x00087A2C	0x00087F3C	1296	function	func_00087A2C	-	high	0x00087F3C	1296	yes
+0x00088478	0x000886F4	636	function	func_00088478	-	high	0x000886F4	636	yes
+0x000898CC	0x000899F0	292	function	func_000898CC	-	high	0x000899F0	292	yes
+0x0008C4AC	0x0008C560	180	function	quaternion_delta	quaternion de l'angle half entre deux quaternions : axe (a x b)/|a+b| times sin(t/2) et w = cos(t/2) ; algorithme connu	medium	0x0008C560	180	yes
 0x0008C754	0x0008C7B8	100	function	func_0008C754	-	high	0x0008C7B8	100	yes
 0x0008C7B8	0x0008C834	124	function	func_0008C7B8	-	high	0x0008C834	124	yes
+0x0008C834	0x0008C908	212	function	quaternion_to_axis_angle	conversion quaternion -> axe-angle : angle 2*acos(w) par l'appel a 0x00024F8BC (acosf), axe (x,y,z)/|v| ; cas degenere (0,0,0) -> angle 0 et axe (1,0,0)	medium	0x0008C908	212	yes
+0x0008C908	0x0008C9B4	172	function	quaternion_inverse	inverse d'un quaternion : (-x,-y,-z,w)/|q|2 ; si |q|2 < 2^-22 le corps rend l'identite (0,0,0,1) ; 28 sites d'appel	high	0x0008C9B4	172	yes
 0x0008D438	0x0008D8AC	1140	function	func_0008D438	-	high	0x0008D8AC	1140	yes
 0x0008D8AC	0x0008DB10	612	function	quaternion_slerp	produit scalaire de deux quaternions (4 flottants en $a1 et $a2) ; seuil 0.9f (0x3F666666) ; 1.0f (0x3F800000) ; chemin lineaire (nlerp) avec sqrt.s puis division par la norme quand le produit scalaire depasse le seuil ; le resultat est ecrit dans $a0	high	0x0008DB10	612	yes
 0x0008DFB8	0x0008E114	348	function	mt19937_genrand	twist de 227 puis 623 elements sur un etat de 624 mots, puis tempering de 624 mots avec les constantes 0x9908B0DF / 0x9D2C5680 / 0xEFC60000 et les decalages 11/7/15/18 (Mersenne Twister MT19937)	high	0x0008E114	348	yes
+0x0008E970	0x0008EA7C	268	function	random_unit_vector	deux appels a mt19937_genrand (0x0008DFB8) ; constantes 2.0f (0x40000000), 1.0f (0x3F800000) et 2*pi (0x40C9FDB) ; z=|r1-2|, phi=2*pi*(r2-1), x=sin(phi)*sqrt(1-z*z), y=cos(phi)*sqrt(1-z*z) ; le couple sin/cos vient de 0x000277EB4 (2/pi = 0x3F22F983) ; point uniforme sur la sphere unite	high	0x0008EA7C	268	yes
+0x0008FBC8	0x00090468	2208	function	func_0008FBC8	-	high	0x00090468	2208	yes
 0x00091C40	0x00092590	2384	function	func_00091C40	-	high	0x00092590	2384	yes
 0x00092F70	0x00092FA8	56	function	func_00092F70	-	high	0x00092FA8	56	yes
 0x000939F8	0x00093A30	56	function	func_000939F8	-	high	0x00093A30	56	yes
@@ -76,27 +238,97 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x00093A68	0x00093A8C	36	function	func_00093A68	-	high	0x00093A8C	36	yes
 0x00093A8C	0x00093B0C	128	function	func_00093A8C	-	high	0x00093B0C	128	yes
 0x00093B0C	0x00093B6C	96	function	func_00093B0C	-	high	0x00093B6C	96	yes
+0x00093B6C	0x00093BCC	96	function	func_00093B6C	-	high	0x00093BCC	96	yes
 0x00093BCC	0x00093E00	564	function	func_00093BCC	-	high	0x00093E00	564	yes
+0x00093E00	0x00093E5C	92	function	func_00093E00	-	high	0x00093E5C	92	yes
 0x00093E5C	0x000940C8	620	function	func_00093E5C	-	high	0x000940C8	620	yes
+0x000940C8	0x00094124	92	function	func_000940C8	-	high	0x00094124	92	yes
+0x000958EC	0x000959CC	224	function	func_000958EC	-	high	0x000959CC	224	yes
 0x00095D38	0x00095E24	236	function	func_00095D38	-	high	0x00095E24	236	yes
+0x000962A0	0x000963A0	256	function	func_000962A0	-	high	0x000963A0	256	yes
 0x000963A0	0x0009664C	684	function	func_000963A0	-	high	0x0009664C	684	yes
+0x0009698C	0x00096C70	740	function	func_0009698C	-	high	0x00096C70	740	yes
+0x00097060	0x00097184	292	function	matrix3_product_transposed	produit de deux matrices 3x3 (9 flottants de part et d'autre) : out[j*3+i] = somme_k A[i*3+k]*B[k*3+j] ; l'un des deux operandes est donc transpose ; 28 sites d'appel, corps sans frame (feuille)	medium	0x00097184	292	yes
+0x00097184	0x00097290	268	function	func_00097184	-	high	0x00097290	268	yes
+0x00097958	0x00097A34	220	function	func_00097958	-	high	0x00097A34	220	yes
 0x00097A34	0x000981C0	1932	function	CFile_ResolvePath	hypothese: chaine 'RADS_NETWORK_DIR' (rodata 0x00333418) + separateur '\' ; corps = resolution d'un repertoire d'environnement puis normalisation d'un chemin ; famille CFile (voisin 0x00099010 -> 'libs\core\cfile.cpp')	medium	0x000981C0	1932	yes
 0x000981C0	0x00098558	920	function	CFile_GetPath	hypothese: formats de chemin '|game_data|...' (rodata 0x00333440-0x00333634) ; corps = switch sur 26 types de fichiers, sprintf du chemin, appel a CFile_ResolvePath (0x00097A34), conversion '\'->'/'	medium	0x00098558	920	yes
+0x00098C1C	0x00098CEC	208	function	func_00098C1C	-	high	0x00098CEC	208	yes
+0x00098CEC	0x00098E7C	400	function	CFile::Open	le corps lit la chaine 'CFile::Open(%s)' (0x003336A8) et la passe a l'aide d'assert 0x0007035C (site 0x00098D58) ; l'adresse est une entree de table de methodes virtuelles de CFile (0x00353160, 0x00353278, 0x00353390, 0x00353568)	high	0x00098E7C	400	yes
 0x00098E7C	0x00098EC0	68	function	func_00098E7C	-	high	0x00098EC0	68	yes
+0x00098EC0	0x00099010	336	function	CFile::Close	l'assert 0x0007035C du site 0x00098F84 passe $a3 = 0x003428B3 = 'Close' ; le corps lit 'libs\core\cfile.cpp' (0x00333660) et le format '%s(%lu): Error in %s: %s' (0x00333644) ; entree de table de methodes virtuelles de CFile (0x003531C0), juste apres ~CFile (0x00353118)	high	0x00099010	336	yes
 0x00099010	0x00099108	248	function	~CFile	corrects CFile_Close; l'assert 0x0007035C du site 0x0009908C passe $a3 = 0x003428A5 = '~CFile' ; le corps est l'entree 0x00353114 de la table de methodes virtuelles de CFile (Exists a 0x0035318C, Close a 0x003531BC) : il appelle Close (0x00098EC0) puis libere le descripteur en +4	high	0x00099108	248	yes
+0x00099394	0x00099434	160	function	func_00099394	-	high	0x00099434	160	yes
+0x0009BFE0	0x0009C05C	124	function	func_0009BFE0	-	high	0x0009C05C	124	yes
+0x0009C05C	0x0009C0D0	116	function	func_0009C05C	-	high	0x0009C0D0	116	yes
+0x0009C2B0	0x0009C644	916	function	func_0009C2B0	-	high	0x0009C644	916	yes
+0x0009C644	0x0009C934	752	function	func_0009C644	-	high	0x0009C934	752	yes
 0x0009C934	0x0009C994	96	function	func_0009C934	-	high	0x0009C994	96	yes
 0x0009D488	0x0009D6A0	536	function	func_0009D488	-	high	0x0009D6A0	536	yes
+0x0009D6A0	0x0009D738	152	function	func_0009D6A0	-	high	0x0009D738	152	yes
+0x0009F44C	0x0009F52C	224	function	CFileCm::EntrySize	l'assert 0x0007035C du site 0x0009F4B4 passe $a3 = 0x00342911 = 'EntrySize' ; le corps lit 'libs\core\cfilecm.cpp' (0x0033382C) et '%s(%lu): Error in %s: %s' (0x003337F8) ; entree de table de methodes virtuelles (0x003534F8)	high	0x0009F52C	224	yes
+0x0009F720	0x0009F73C	28	function	qsort	corps = un seul appel, sans preparer les arguments, a qsort (0x000244984 : base, nombre, taille, comparateur appele par jalr $a2, elements echangees) ; 13 sites d'appel	medium	0x0009F73C	28	yes
+0x0009F73C	0x0009F774	56	function	func_0009F73C	-	high	0x0009F774	56	yes
+0x0009F7EC	0x0009F818	44	function	func_0009F7EC	-	high	0x0009F818	44	yes
+0x0009FC9C	0x000A00E0	1092	function	func_0009FC9C	-	high	0x000A00E0	1092	yes
+0x000A1100	0x000A124C	332	function	func_000A1100	-	high	0x000A124C	332	yes
+0x000A13FC	0x000A14B4	184	function	func_000A13FC	-	high	0x000A14B4	184	yes
+0x000A16E4	0x000A1708	36	function	func_000A16E4	-	high	0x000A1708	36	yes
+0x000A19EC	0x000A1CEC	768	function	memmove	meme algorithme que le memmove de la libc (0x00070C90) : copie octet par octet jusqu'a l'alignement 4, puis blocs de 32 octets ; table de 8 entrees a 0x00333AA0 dont toutes les cibles sont dans le corps ; test de recouvrement src<dst ; signature de methode (this, dst, src), taille lue en +0x14	medium	0x000A1CEC	768	yes
+0x000A1DE0	0x000A1DFC	28	function	func_000A1DE0	-	high	0x000A1DFC	28	yes
+0x000A21B4	0x000A21E4	48	function	func_000A21B4	-	high	0x000A21E4	48	yes
+0x000A21E4	0x000A2214	48	function	func_000A21E4	-	high	0x000A2214	48	yes
+0x000A35A4	0x000A364C	168	function	quaternion_to_matrix	formule exacte du quaternion (x,y,z,w) vers la matrice de rotation 3x3 : m00=1-2(y*y+z*z), m10=2(x*y+w*z), m01=2(x*y-w*z), m11=1-2(x*x+z*z) ; constantes 2.0f (0x40000000) et 1.0f (0x3F800000) ; 4 flottants lus en $a1, 9 ecrits en $a0 (stockage par colonnes) ; 28 sites d'appel, corps sans frame	high	0x000A364C	168	yes
+0x000A3FA4	0x000A407C	216	function	func_000A3FA4	-	high	0x000A407C	216	yes
 0x000A407C	0x000A417C	256	function	func_000A407C	-	high	0x000A417C	256	yes
+0x000A417C	0x000A41C0	68	function	func_000A417C	-	high	0x000A41C0	68	yes
+0x000A4370	0x000A4454	228	function	func_000A4370	-	high	0x000A4454	228	yes
+0x000A4728	0x000A47C4	156	function	func_000A4728	-	high	0x000A47C4	156	yes
+0x000A4A6C	0x000A4A7C	16	function	func_000A4A6C	-	high	0x000A4A7C	16	yes
 0x000A4A7C	0x000A4A8C	16	function	flag_test	lit le mot d'indicateurs en +0x994 puis teste le bit de masque 0x2 (andi $v0,$a0,2) ; rend 1 si le bit est pose, 0 sinon	low	0x000A4A8C	16	yes
 0x000A4A8C	0x000A4E18	908	function	func_000A4A8C	-	high	0x000A4E18	908	yes
 0x000A4E18	0x000A5198	896	function	func_000A4E18	-	high	0x000A5198	896	yes
+0x000A53C0	0x000A5738	888	function	func_000A53C0	-	high	0x000A5738	888	yes
+0x000A58E0	0x000A598C	172	function	func_000A58E0	-	high	0x000A598C	172	yes
+0x000A5FBC	0x000A62BC	768	function	func_000A5FBC	-	high	0x000A62BC	768	yes
+0x000A62BC	0x000A6480	452	function	func_000A62BC	-	high	0x000A6480	452	yes
+0x000A6494	0x000A6708	628	function	func_000A6494	-	high	0x000A6708	628	yes
+0x000A6760	0x000A6968	520	function	func_000A6760	-	high	0x000A6968	520	yes
+0x000A715C	0x000A724C	240	function	func_000A715C	-	high	0x000A724C	240	yes
+0x000A724C	0x000A777C	1328	function	func_000A724C	-	high	0x000A777C	1328	yes
+0x000A880C	0x000A8C50	1092	function	func_000A880C	-	high	0x000A8C50	1092	yes
+0x000A8C80	0x000A904C	972	function	func_000A8C80	-	high	0x000A904C	972	yes
+0x000A9BC8	0x000A9FA4	988	function	func_000A9BC8	-	high	0x000A9FA4	988	yes
 0x000AA7A8	0x000AA7E4	60	function	func_000AA7A8	-	high	0x000AA7E4	60	yes
+0x000AB0B4	0x000AB118	100	function	func_000AB0B4	-	high	0x000AB118	100	yes
+0x000AB2F8	0x000AB3B8	192	function	func_000AB2F8	-	high	0x000AB3B8	192	yes
+0x000AB3B8	0x000AB420	104	function	func_000AB3B8	-	high	0x000AB420	104	yes
+0x000AB4F4	0x000AB5E4	240	function	func_000AB4F4	-	high	0x000AB5E4	240	yes
+0x000AB5E4	0x000AB6B4	208	function	func_000AB5E4	-	high	0x000AB6B4	208	yes
 0x000ABDCC	0x000ABE44	120	function	func_000ABDCC	-	high	0x000ABE44	120	yes
+0x000AC30C	0x000AC490	388	function	func_000AC30C	-	high	0x000AC490	388	yes
+0x000ACDC8	0x000ACE20	88	function	func_000ACDC8	-	high	0x000ACE20	88	yes
+0x000AD1CC	0x000AD2B0	228	function	func_000AD1CC	-	high	0x000AD2B0	228	yes
+0x000AD76C	0x000AD7C8	92	function	func_000AD76C	-	high	0x000AD7C8	92	yes
+0x000AD7E8	0x000ADA9C	692	function	func_000AD7E8	-	high	0x000ADA9C	692	yes
 0x000AE258	0x000AE99C	1860	function	func_000AE258	-	high	0x000AE99C	1860	yes
+0x000AE99C	0x000AEA00	100	function	func_000AE99C	-	high	0x000AEA00	100	yes
+0x000AF5D8	0x000AF604	44	function	func_000AF5D8	-	high	0x000AF604	44	yes
 0x000B0F6C	0x000B1328	956	function	func_000B0F6C	-	high	0x000B1328	956	yes
+0x000B1E24	0x000B2920	2812	function	func_000B1E24	-	high	0x000B2920	2812	yes
+0x000B9E38	0x000BACB0	3704	function	func_000B9E38	-	high	0x000BACB0	3704	yes
+0x000BF3B0	0x000BFF54	2980	function	func_000BF3B0	-	high	0x000BFF54	2980	yes
+0x000BFF54	0x000C0938	2532	function	func_000BFF54	-	high	0x000C0938	2532	yes
+0x000C1BAC	0x000C2490	2276	function	func_000C1BAC	-	high	0x000C2490	2276	yes
+0x000D1FB0	0x000D25B0	1536	function	func_000D1FB0	-	high	0x000D25B0	1536	yes
+0x000D7FE4	0x000D8440	1116	function	func_000D7FE4	-	high	0x000D8440	1116	yes
+0x000D8AA4	0x000D8B64	192	function	func_000D8AA4	-	high	0x000D8B64	192	yes
 0x000D8CBC	0x000D8CF4	56	function	func_000D8CBC	-	high	0x000D8CF4	56	yes
 0x000D8DDC	0x000D8E00	36	function	func_000D8DDC	-	high	0x000D8E00	36	yes
 0x000D94FC	0x000D9758	604	function	func_000D94FC	-	high	0x000D9758	604	yes
+0x000D9BD4	0x000D9C44	112	function	func_000D9BD4	-	high	0x000D9C44	112	yes
+0x000D9CB4	0x000D9D58	164	function	entity_event_update	lit la propriete 'event' (rodata 0x003340A4) via l'accesseur de propriete 0x00023970 et la compare a l'argument ; entree de table de methodes virtuelles 0x00353820	low	0x000D9D58	164	yes
+0x000D9E64	0x000D9EA8	68	function	entity_engageradius_update	lit la propriete flottante 'engageradius' (rodata 0x003340AC) via l'accesseur 0x00023A10 et ecrit son carre dans +0x174	medium	0x000D9EA8	68	yes
 0x000D9EA8	0x000D9ED8	48	function	func_000D9EA8	-	high	0x000D9ED8	48	yes
 0x000D9ED8	0x000DA0E0	520	function	func_000D9ED8	-	high	0x000DA0E0	520	yes
 0x000DA0E0	0x000DA19C	188	function	func_000DA0E0	-	high	0x000DA19C	188	yes
@@ -107,22 +339,30 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x000DB294	0x000DB2D4	64	function	func_000DB294	-	high	0x000DB2D4	64	yes
 0x000DBB08	0x000DBC6C	356	function	func_000DBB08	-	high	0x000DBC6C	356	yes
 0x000DC5BC	0x000DC64C	144	function	func_000DC5BC	-	high	0x000DC64C	144	yes
+0x000DC740	0x000DC8A4	356	function	func_000DC740	-	high	0x000DC8A4	356	yes
 0x000DC8A4	0x000DCC74	976	function	func_000DC8A4	-	high	0x000DCC74	976	yes
+0x000DD2D0	0x000DD6E4	1044	function	func_000DD2D0	-	high	0x000DD6E4	1044	yes
 0x000DD780	0x000DD7A0	32	function	func_000DD780	-	high	0x000DD7A0	32	yes
 0x000DD7A0	0x000DD998	504	function	func_000DD7A0	-	high	0x000DD998	504	yes
 0x000DDB78	0x000DDBD0	88	function	func_000DDB78	-	high	0x000DDBD0	88	yes
 0x000DDCD4	0x000DDD30	92	function	func_000DDCD4	-	high	0x000DDD30	92	yes
+0x000DDDC4	0x000DDEDC	280	function	func_000DDDC4	-	high	0x000DDEDC	280	yes
+0x000DDEDC	0x000DDFF8	284	function	func_000DDEDC	-	high	0x000DDFF8	284	yes
 0x000DDFF8	0x000DE350	856	function	entity_health_update	lit la propriete 'health' (rodata 0x003340C8) via l'acceseur de propriete 0x000238D0 puis ecrit 0.15f (0x3E19999A) dans le champ +0x150 ; entree de table de methodes virtuelles 0x0035393C ; appelee par le corps d'IA ennemi 0x001A06C8	low	0x000DE350	856	yes
 0x000E2284	0x000E2308	132	function	func_000E2284	-	high	0x000E2308	132	yes
 0x000E2308	0x000E2334	44	function	func_000E2308	-	high	0x000E2334	44	yes
 0x000E249C	0x000E26B0	532	function	func_000E249C	-	high	0x000E26B0	532	yes
 0x000E26B0	0x000E28F0	576	function	func_000E26B0	-	high	0x000E28F0	576	yes
+0x000E28F0	0x000E2A6C	380	function	func_000E28F0	-	high	0x000E2A6C	380	yes
 0x000E2A6C	0x000E3020	1460	function	func_000E2A6C	-	high	0x000E3020	1460	yes
+0x000E9814	0x000E98BC	168	function	quaternion_to_matrix	algorithme connu : conversion d'un quaternion (4 flottants en $a1) en matrice de rotation 3x3 (1-2(y^2+z^2), 2(xy-wz), ...), les 9 flottants ecrits de +0 a +0x20	high	0x000E98BC	168	yes
+0x000EA958	0x000EA980	40	function	lerp_step	interpolation lineaire : x = x*(1-t) + t*v, t = second argument flottant, x = this->+0x25C ; resultat ecrit en +0x25C et +0x228	medium	0x000EA980	40	yes
 0x000EA98C	0x000EAD58	972	function	func_000EA98C	-	high	0x000EAD58	972	yes
 0x000EEE94	0x000EEF70	220	function	func_000EEE94	-	high	0x000EEF70	220	yes
 0x000EEF70	0x000EEFC4	84	function	func_000EEF70	-	high	0x000EEFC4	84	yes
 0x000EEFC4	0x000EF01C	88	function	func_000EEFC4	-	high	0x000EF01C	88	yes
 0x000EF01C	0x000EF05C	64	function	func_000EF01C	-	high	0x000EF05C	64	yes
+0x000EF150	0x000EF228	216	function	find_by_id	interroge la propriete 'id' (rodata 0x00334668) via l'accesseur 0x000238D0 sur une table d'entrees de 16 octets et rend l'entree dont l'id vaut l'argument	medium	0x000EF228	216	yes
 0x000EF228	0x000EF2C8	160	function	func_000EF228	-	high	0x000EF2C8	160	yes
 0x000F6FC4	0x000F7CCC	3336	function	func_000F6FC4	-	high	0x000F7CCC	3336	yes
 0x000FE9E4	0x000FECC4	736	function	func_000FE9E4	-	high	0x000FECC4	736	yes

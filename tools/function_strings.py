@@ -124,18 +124,48 @@ def to_file(loads: list[tuple[int, int, int, int]], address: int) -> int | None:
     return None
 
 
+def data_ranges(data: bytes) -> list[tuple[int, int]]:
+    """Return the (virtual address, end) of the allocatable data sections.
+
+    A section is data when it is allocated, is not executable, and holds
+    something.  The code is excluded, and so is the zero-filled bss.
+    """
+    if data[:4] != b"\x7fELF":
+        return []
+    (_kind, _machine, _version, _entry, _phoff, _shoff, _flags, _ehsize,
+     _phentsize, _phnum, _shentsize, _shnum, _shstrndx) = struct.unpack_from(
+        "<HHIIIIIHHHHHH", data, 16)
+    out = []
+    for index in range(_shnum):
+        _name, stype, sflags, saddr, _offset, ssize, _link, _info, \
+            _align, _entsize = struct.unpack_from(
+                "<IIIIIIIIII", data, _shoff + index * _shentsize)
+        if not (sflags & 0x2) or (sflags & 0x4) or stype == 8 or not ssize:
+            continue
+        out.append((saddr, saddr + ssize))
+    return out
+
+
 def string_at(data: bytes, loads: list[tuple[int, int, int, int]],
-              address: int) -> str | None:
-    """Return the string a virtual address points at, or ``None``."""
+              address: int, ranges: list[tuple[int, int]]) -> str | None:
+    """Return the string a virtual address points at, or ``None``.
+
+    The address has to be in a **data** section.  A code address can hold
+    printable bytes, and a run of them can look exactly like a string: the
+    review of wave 3 found a body that "read" a comma and a body that
+    "read" the digit four, and both of them were code.
+    """
+    if not any(low <= address < high for low, high in ranges):
+        return None
     offset = to_file(loads, address)
     if offset is None or offset + 1 > len(data):
         return None
     if not (0x20 <= data[offset] < 0x7F):
         return None
-    end_of_string = data.find(b"\x00", offset, offset + 512)
-    if end_of_string < 0:
+    end = data.find(b"\x00", offset, offset + 512)
+    if end < 0:
         return None
-    text = data[offset:end_of_string]
+    text = data[offset:end]
     if not all(0x20 <= byte < 0x7F for byte in text):
         return None
     return text.decode("ascii")
@@ -155,6 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     if len(loads) < 2:
         raise SystemExit("the executable has no data segment")
 
+    ranges = data_ranges(data)
     layout = read_layout(args.layout)
     if not layout:
         raise SystemExit(f"no reviewed layout in {args.layout}")
@@ -169,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
         for start, end in layout:
             found = []
             for address in addresses_of(data, start, end, loads):
-                text = string_at(data, loads, address)
+                text = string_at(data, loads, address, ranges)
                 if text is None:
                     continue
                 found.append((address, text))

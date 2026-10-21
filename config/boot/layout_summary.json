@@ -1,13 +1,13 @@
 {
   "class_counts": {
-    "function": 421,
+    "function": 661,
     "not_function": 0,
     "unknown": 0
   },
   "confidence_counts": {
-    "high": 402,
-    "low": 0,
-    "medium": 19
+    "high": 619,
+    "low": 2,
+    "medium": 40
   },
   "duplicates": 139,
   "lots": [
@@ -24,12 +24,18 @@
     "L11",
     "L12",
     "L13",
-    "L14"
+    "L14",
+    "L15",
+    "L16",
+    "L17",
+    "L18",
+    "L19",
+    "L20"
   ],
   "name_corrections": 2,
-  "named": 48,
-  "reviewed": 421,
-  "sweep_agreement_rate": 0.9905,
-  "sweep_checked": 421,
+  "named": 84,
+  "reviewed": 661,
+  "sweep_agreement_rate": 0.9939,
+  "sweep_checked": 661,
   "sweep_disagreements": 4
 }
