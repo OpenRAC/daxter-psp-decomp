@@ -6,9 +6,11 @@ __pycache__/
 # The repository's own private workspace: modules, bounds, lots, dossiers.
 # Only the templates are tracked.
 /work/*
+!/work/*.md
 !/work/README.md
 !/work/templates/
 !/work/E0/
+/work/E0/*
 !/work/E0/.gitkeep
 
 # Local copies of the game, and anything extracted from it. Never commit
