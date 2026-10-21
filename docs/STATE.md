@@ -124,30 +124,26 @@ nowhere. There is no RTTI. Naming them would be inventing.
 
 ## The next concrete step
 
-> **The toolchain, and the rest of the layout.**
+> **Qualify the compiler.** The decisive test is the **`strcmp` of the
+> retail code at `0x00245504`**: its behaviour is known — it compares
+> the bytes of two strings and returns the difference of the first
+> differing bytes, with a *signed* comparison. That is a known idiom,
+> and the exact shape of the code is a fingerprint of the compiler and
+> of the library it was built against. Compile the equivalent with each
+> candidate toolchain and compare the **shape**: the frame size, the
+> slot width, what the delay slot holds, the form of the comparison.
+> `tools/harness.py` is the tool that will compare the bytes once the
+> shape is right.
 
-> 1. **Qualify the compiler.** The decisive test is the **`strcmp` of the
->    retail code at `0x00245504`**: its behaviour is known — it compares
->    the bytes of two strings and returns the difference of the first
->    differing bytes, with a *signed* comparison. That is a known idiom,
->    and the exact shape of the code is a fingerprint of the compiler and
->    the library it was built against. Compile the equivalent with each
->    candidate toolchain and compare the **shape**: the frame size, the
->    slot width, what the delay slot holds, the form of the comparison.
->    `tools/harness.py` is the tool that will compare the bytes when the
->    shape is right.
->
-> 2. **Review the lots L15 to L24.** They are cut, with the bodies of the
->    previous waves left out: four hundred more targets, same protocol.
->
-> 3. **Read the jump tables** in the control-flow graph, so that the last
->    error class of the sweep disappears.
+Then the two pieces of work that are already cut: the lots **L15 to
+L24**, four hundred more targets with the bodies of the previous waves
+left out, and the **jump tables** of the control-flow graph, so that
+the last error class of the sweep disappears.
 
 After those, the **body gate** is reachable: the layout is there, the
-harness is there, and only the compiler stands between the project and its
-first matched body.
+harness is there, and only the compiler stands between the project and
+its first matched body.
 
----
 
 ## The next concrete step
 
