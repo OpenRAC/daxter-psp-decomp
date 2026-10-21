@@ -49,12 +49,47 @@ when all three hold:
 The third check is the one that separates a function from a fragment, and
 it is the one that needs the control-flow graph.
 
+### The rule of the end, once the wave was over
+
+Lot L07 measured the rule that reproduces **every** bound of wave 1 and
+every correction of lot L06:
+
+> **`end` is the last instruction reachable from `start` in the
+> control-flow graph, plus four.**
+
+Not the first return, and not the return of the epilogue. Two cases make
+the difference, and both were found in the wave:
+
+* a body with **two epilogues** — `0x0024F8BC`, `0x0024FC90`,
+  `0x00266FF0`: the second return is the one that ends the body;
+* a body with a **cold path after its epilogue** — `0x00258524` runs a
+  64-bit multiplication to `0x258898`, well past the return at
+  `0x2585F4`.
+
+And the converse, which is the negative control of lot L07: a block that
+the graph **does not** reach is not part of the body, even when it sits
+between the body and the next one. `0x000DE350` is 28 bytes of epilogue
+that no branch of the binary reaches and whose address appears nowhere in
+the file; the body of `0x000DDFF8` ends before it.
+
+> **A body ends where the graph ends, not where a return is.**
+
+### A function is not always called
+
+A function can be reached only through a **pointer**: a virtual method
+table, or a table of data. `0x000EF2C8` has **no** call site at all, and
+is referenced from `.data` — the sweep never proposed it, and a review that
+trusted the sweep alone would have missed it.
+
+The virtual method tables sit in `.rodata` as pairs of a **pointer and a
+zero**, and a body address found in one of them corroborates the function.
+
 ---
 
-## 2. The two traps
+## 2. The traps
 
-Both were found by the wave, and both would have produced a wrong answer
-if the review had not been done.
+All were found by the wave, and all would have produced a wrong answer if
+the review had not been done.
 
 ### The delay slot must be absorbed
 
@@ -75,6 +110,22 @@ and the save of `$ra` goes from **1 to 15 instructions**, with a mode at 1:
 
 A scan that looks five instructions ahead misses 4 700 of the 14 655
 candidates. The inventory now looks sixteen.
+
+### A third trap, found by lot L07: the registers have to be followed
+
+To resolve what a body *reads*, the registers have to be followed, not
+guessed. The first resolver paired a `lui` with whatever came later, and
+made a body read `Korean`: the `lui` had been superseded by a write to
+its register, and the high half it held was dead.
+
+`tools/regflow.py` kills a register when an instruction writes it, and the
+string resolver uses it. The false positive is gone, and the true count
+went **up**: 28 bodies and 132 references, against 24 and 124 before —
+the flow now continues past the interference instead of being thrown off
+by it.
+
+The same rule applies to the assert resolver, where the argument of the
+helper is built the same way.
 
 ---
 
