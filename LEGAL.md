@@ -31,6 +31,12 @@ themselves:
 That is what the repository contains. The tools read **structure** and
 deliberately never emit payload bytes, so their output is publishable.
 
+There is one exception, and it is a table of **cryptographic keys**: the
+KIRK key vault of the PSP, vendored in `tools/psp_crypto.py`. Those keys
+are part of the console's published design, they are in the open-source
+PPSSPP under the GPL, and the decryption cannot be done without them. Their
+provenance and their licence are stated in `THIRD_PARTY_NOTICES.md`.
+
 ## What the authors may not publish
 
 * the disc image, or any part of it;

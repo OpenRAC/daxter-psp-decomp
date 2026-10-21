@@ -35,6 +35,8 @@ REQUIRED_PATHS = [
     ".gitignore",
     "config/target.json",
     "config/toolchain.json",
+    "config/boot/summary.json",
+    "config/boot/functions.tsv",
     "config/disc/containers.tsv",
     "config/disc/pack_index.tsv",
     "config/levels/modules.tsv",
@@ -45,8 +47,12 @@ REQUIRED_PATHS = [
     "docs/REUSE.md",
     "docs/FORMATS.md",
     "tools/psp_formats.py",
+    "tools/psp_crypto.py",
+    "tools/decrypt_psp.py",
     "tools/psp_elf.py",
     "tools/disc_inventory.py",
+    "tools/boot_inventory.py",
+    "tools/function_inventory.py",
     "tools/progress.py",
     "tests/test_tools.py",
 ]
@@ -115,11 +121,21 @@ def check_target(report: Report) -> dict:
                    "the pinned executable is not a ~PSP container")
     report.require(executable.get("encrypted") is True,
                    "the pinned executable is not marked as encrypted")
-    report.require(executable.get("decrypted_sha256") in (None, "") or
-                   bool(HEX64.match(executable.get("decrypted_sha256", ""))),
-                   "the decrypted hash of the executable is malformed")
+    decrypted = executable.get("decrypted_sha256")
+    if decrypted:
+        report.require(bool(HEX64.match(decrypted)),
+                       "the decrypted hash of the executable is malformed")
+        report.require(executable.get("prx_type") in ("type0", "type1"),
+                       "the PRX type of the executable is not recorded")
+    else:
+        report.require(executable.get("decrypted_sha256") in (None, ""),
+                       "the decrypted hash of the executable is malformed")
+    code = target.get("code", {})
+    report.require(code.get("objects") == 1,
+                   "the number of code objects is not recorded")
     report.note(f"target: {target.get('game')} ({target.get('title_id')}), "
-                f"executable {executable.get('size')} bytes")
+                f"executable {executable.get('size')} bytes, "
+                f"decrypted: {bool(decrypted)}")
     return target
 
 
@@ -142,6 +158,8 @@ def check_tables(report: Report) -> None:
         "config/disc/pack_index.tsv": ("path", "size", "sha256", "version",
                                        "entries", "types", "magics"),
         "config/levels/modules.tsv": ("path", "version", "entries", "types"),
+        "config/boot/functions.tsv": ("address", "file_offset", "frame",
+                                      "saves_ra", "gp_setup"),
     }
     for relative, header in expectations.items():
         path = ROOT / relative

@@ -20,21 +20,26 @@
     "sha1": "d3ca31c5f3bb47dd09d83b6a61a1f38691ec57d1",
     "sha256": "66867ab6441d678498977203be637ee651a4743d9725e04b655c071fc9970585",
     "encrypted": true,
-    "decrypted_sha1": null,
-    "decrypted_sha256": null
+    "prx_type": "type1",
+    "tag": "0xC0CB167C",
+    "decrypt_mode": 9,
+    "decrypted_size": 4949041,
+    "decrypted_sha1": "4a348e91e45fb17c23f2e8b72ce67113e7c4e4c2",
+    "decrypted_sha256": "df13fd9d044044e0c17198b2837bdf6aacd8a9d1ee85680670a40e00590d67d2"
   },
   "boot_blob": {
     "path": "PSP_GAME/SYSDIR/BOOT.BIN",
     "size": 4949041,
     "sha1": "0c7220dc39c64665e9f2279d84959c04acf3ffd2",
     "sha256": "00f92dccad4c6715b91d8b5103b431d364a20030b040b913a8b28cc86ac0949f",
-    "note": "not an ELF; the relationship with the executable is not established"
+    "note": "not an ELF: the file is entirely zeroed and its size is exactly the elf_size of the executable, so it is the buffer the firmware decrypts the executable into"
   },
   "update": {
+    "note": "this is the PSP system firmware updater that ships on the disc, not a patch of the game: DISC_ID is MSTKUPDATE, CATEGORY is MG, TITLE is 'PSP Update ver 2.60', and the module is named 'updater'",
     "executable": {
       "path": "PSP_GAME/SYSDIR/UPDATE/EBOOT.BIN",
       "container": "~PSP",
-      "module_name": "update",
+      "module_name": "updater",
       "size": 3951712,
       "sha1": "4bf047a3564edd4d9116ce8d3a512043bdf68616",
       "sha256": "5721cb2c4c4929a4a65ccb31f137ec2408d77409180cbfea729e5df1630bcc0e"
@@ -47,6 +52,19 @@
       "sha256": "c1f72a0c7003e9a3b9a01f60cdb1731ce92eedfacd103f9c714c48350e163635",
       "note": "the member table and the members are encrypted with a disc-derived key"
     }
+  },
+  "code": {
+    "objects": 1,
+    "kind": "PSP PRX",
+    "elf_type": "0xFFA0",
+    "entry_point": "0x00000000",
+    "segments": 2,
+    "sections": 60,
+    "text_size": 3335156,
+    "bss_size": 263480,
+    "function_candidates": 14655,
+    "functions_saving_ra": 8794,
+    "symbol_table": "empty: the ELF carries one null symbol, so the functions have no names and no sizes"
   },
   "asset_containers": {
     "path": "PSP_GAME/USRDIR/data",

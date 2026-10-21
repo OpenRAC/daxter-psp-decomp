@@ -32,12 +32,17 @@ ELF_SYMBOL = struct.Struct("<IIIBBH")
 
 ET_EXEC = 2
 ET_DYN = 3
+#: The type the PSP SDK gives to a PRX. The PSP loader does not care about
+#: the ELF type, so a retail PRX does not claim to be an executable.
+ET_SCE_PSP = 0xFFA0
 EM_MIPS = 8
 SHT_SYMTAB = 2
 SHT_STRTAB = 3
 SHT_NOBITS = 8
 STT_FUNC = 2
 PT_LOAD = 1
+
+ELF_TYPES = {ET_EXEC: "EXEC", ET_DYN: "DYN", ET_SCE_PSP: "PSP-PRX"}
 
 
 class ElfError(ValueError):
@@ -51,8 +56,9 @@ def _headers(data: bytes):
      phnum, shentsize, shnum, shstrndx) = ELF_HEADER.unpack_from(data, 16)
     if machine != EM_MIPS:
         raise ElfError("not a MIPS executable")
-    if kind not in (ET_EXEC, ET_DYN):
-        raise ElfError("not an executable or a shared object")
+    if kind not in ELF_TYPES:
+        raise ElfError(f"not an executable, a shared object or a PSP PRX "
+                       f"(type 0x{kind:04X})")
     if version != 1 or ehsize != 52:
         raise ElfError("unexpected ELF header version")
     if phnum and (phentsize != PROGRAM_HEADER.size or
@@ -132,9 +138,10 @@ def inspect(path: Path) -> dict[str, object]:
         "size": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
         "sha1": hashlib.sha1(data).hexdigest(),
-        "type": "EXEC" if header["type"] == ET_EXEC else "DYN",
+        "type": ELF_TYPES.get(header["type"], f"0x{header['type']:04X}"),
         "entry_point": f"0x{header['entry']:08X}",
         "flags": f"0x{header['flags']:08X}",
+        "has_section_headers": bool(header["shnum"]),
         "programs": program_report,
         "sections": section_report,
     }

@@ -22,6 +22,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
 import disc_inventory  # noqa: E402
+import decrypt_psp  # noqa: E402
+import function_inventory  # noqa: E402
+import psp_crypto  # noqa: E402
 import psp_elf  # noqa: E402
 import psp_formats as fmt  # noqa: E402
 
@@ -161,6 +164,54 @@ class EncryptedPspTests(unittest.TestCase):
         self.assertEqual(header.header_parameter, 0x800)
 
 
+class CryptoTests(unittest.TestCase):
+    def test_aes_cmac_matches_rfc4493(self) -> None:
+        key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c")
+        vectors = [
+            ("", "bb1d6929e95937287fa37d129b756746"),
+            ("6bc1bee22e409f96e93d7e117393172a",
+             "070a16b46b4d4144f79bdd9dd04a287c"),
+            ("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5"
+             "130c81c46a35ce411",
+             "dfa66747de9ae63030ca32611497c827"),
+            ("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5"
+             "130c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710",
+             "51f0bebf7e3b9d92fc49741779363cfe"),
+        ]
+        for message, expected in vectors:
+            self.assertEqual(psp_crypto.aes_cmac(key, bytes.fromhex(message)),
+                             bytes.fromhex(expected))
+
+    def test_the_key_vault_is_complete(self) -> None:
+        self.assertEqual(len(psp_crypto.KEYVAULT), 128)
+        for slot, key in enumerate(psp_crypto.KEYVAULT):
+            self.assertEqual(len(key), 16, f"slot {slot}")
+
+    def test_kirk7_refuses_an_unknown_slot(self) -> None:
+        with self.assertRaises(ValueError):
+            psp_crypto.kirk7(0x80, b"\x00" * 16)
+
+    def test_aes_cbc_needs_whole_blocks(self) -> None:
+        with self.assertRaises(ValueError):
+            psp_crypto.aes_cbc_decrypt(b"\x00" * 16, b"\x00" * 17)
+
+
+class DecryptTests(unittest.TestCase):
+    def test_refuses_a_file_that_is_not_a_container(self) -> None:
+        with self.assertRaises(decrypt_psp.DecryptError):
+            decrypt_psp.decrypt_prx(b"not a ~PSP container at all, no")
+
+    def test_refuses_a_truncated_container(self) -> None:
+        with self.assertRaises(decrypt_psp.DecryptError):
+            decrypt_psp.decrypt_prx(b"~PSP" + b"\x00" * 8)
+
+    def test_reports_an_unknown_tag(self) -> None:
+        blob = bytearray(build_encrypted_psp("dax").ljust(0x150, b"\x00"))
+        struct.pack_into("<I", blob, 0xD0, 0xDEADBEEF)
+        with self.assertRaises(decrypt_psp.DecryptError):
+            decrypt_psp.decrypt_prx(bytes(blob))
+
+
 class ElfTests(unittest.TestCase):
     def test_refuses_an_encrypted_executable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -175,6 +226,49 @@ class ElfTests(unittest.TestCase):
             path.write_bytes(b"junk" * 64)
             with self.assertRaises(psp_elf.ElfError):
                 psp_elf.inspect(path)
+
+    def test_accepts_the_psp_prx_type(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "prx.elf"
+            path.write_bytes(build_prx())
+            report = psp_elf.inspect(path)
+            self.assertEqual(report["type"], "PSP-PRX")
+            self.assertEqual(len(report["programs"]), 1)
+
+
+def build_prx(code: bytes = b"") -> bytes:
+    """Build a minimal Allegrex PRX: one program header, no sections.
+
+    The program header covers the code that follows the headers, so the
+    inventory sees it as the executable segment.
+    """
+    header = bytearray(b"\x7fELF\x01\x01\x01\x00" + b"\x00" * 8)
+    header += struct.pack("<HH", 0xFFA0, 8)          # e_type, e_machine
+    header += struct.pack("<I", 1)                  # e_version
+    header += struct.pack("<I", 0)                  # e_entry
+    header += struct.pack("<I", 52)                 # e_phoff
+    header += struct.pack("<I", 0)                  # e_shoff
+    header += struct.pack("<I", 0)                  # e_flags
+    header += struct.pack("<HHHHHH", 52, 32, 1, 0, 0, 0)
+    program = struct.pack("<IIIIIIII", 1, 84, 0, 0, len(code), len(code), 5, 4)
+    return bytes(header) + program + code
+
+
+class FunctionInventoryTests(unittest.TestCase):
+    def test_finds_a_frame_opening(self) -> None:
+        code = struct.pack("<I", 0x03E00008)          # jr $ra
+        code += struct.pack("<I", 0x27BDFFE0)         # addiu $sp,$sp,-0x20
+        code += struct.pack("<I", 0xAFBF001C)         # sw $ra,0x1C($sp)
+        code += struct.pack("<I", 0x00000000)
+        candidates = function_inventory.inventory(build_prx(code))
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["frame"], 0x20)
+        self.assertTrue(candidates[0]["saves_ra"])
+
+    def test_ignores_a_frame_that_is_too_small(self) -> None:
+        code = struct.pack("<I", 0x27BDFFF8)           # addiu $sp,$sp,-8
+        candidates = function_inventory.inventory(build_prx(code))
+        self.assertEqual(candidates, [])
 
 
 class InventoryTests(unittest.TestCase):

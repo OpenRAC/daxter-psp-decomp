@@ -75,15 +75,19 @@ project is a research problem, not a decompilation problem.
         |
         |  mount or extract
         v
-  PSP_GAME/SYSDIR/EBOOT.BIN          ~PSP encrypted executable
+  PSP_GAME/SYSDIR/EBOOT.BIN          ~PSP encrypted executable, tag 0xC0CB167C
         |
-        |  decrypt  (PPSSPP pspDecryptPRX, or an equivalent implementation)
+        |  python3 tools/decrypt_psp.py
         v
-  decrypted.elf                      Allegrex ELF, MIPS32r2, little-endian
+  decrypted.elf                      PSP PRX, 4 949 041 bytes
+        |                             SHA-256 df13fd9d…67d2
+        |  python3 tools/boot_inventory.py
+        v
+  sections, segments, module info, function candidates
         |
-        |  tools/psp_elf.py            structure only
+        |  python3 tools/function_inventory.py
         v
-  sections, symbols, function inventory
+  config/boot/functions.tsv          14 655 frame candidates
         |
         |  compile with a qualified Allegrex toolchain
         v
@@ -95,34 +99,35 @@ The asset side runs in parallel and never touches the code:
 ```
   PSP_GAME/USRDIR/data/*.bin         342 Pack containers
         |
-        |  tools/disc_inventory.py
+        |  python3 tools/disc_inventory.py
         v
   config/disc/pack_index.tsv         index, sizes, hashes, type census
 ```
 
 ### Step 1 — decrypt the executable
 
-`~PSP` uses a key derived from the disc identifier. The pragmatic route is a
-local PPSSPP build, which exports the routine the project
-[`anthonyhfm/daxter-recompiled`](https://github.com/anthonyhfm/daxter-recompiled)
-already uses:
+The `~PSP` container is encrypted with the KIRK engine of the PSP. This
+project implements the decryption itself, in Python, from the published
+description of the format:
 
-```c
-int pspDecryptPRX(const unsigned char *encrypted,
-                   unsigned char *output,
-                   unsigned int size,
-                   const unsigned char *key);
+```sh
+python3 tools/decrypt_psp.py <EBOOT.BIN> <decrypted.elf>
 ```
 
-`tools/psp_formats.py` refuses to read a `~PSP` blob and says so; the
-decrypted ELF is then read by `tools/psp_elf.py`.
+The key material is in `tools/psp_crypto.py`, and its provenance is in
+`THIRD_PARTY_NOTICES.md`. Two things confirm the result: the SHA-1 of the
+header and the two CMAC hashes of the KIRK command all match, and the same
+code decrypts the PSP firmware updater that ships on the same disc.
+
+The decrypted ELF is **never committed**. What the repository publishes is
+the structure it yields.
 
 ### Step 2 — read the structure
 
 ```sh
 python3 tools/psp_formats.py  <file>            # any of the four containers
-python3 tools/psp_elf.py      <decrypted.elf>   # sections, programs, entry
-python3 tools/psp_elf.py      <decrypted.elf> --functions --tsv
+python3 tools/psp_elf.py      <decrypted.elf>   # segments, sections, entry
+python3 tools/function_inventory.py <decrypted.elf>
 ```
 
 ### Step 3 — qualify a toolchain
@@ -130,7 +135,8 @@ python3 tools/psp_elf.py      <decrypted.elf> --functions --tsv
 A byte-identical build needs the compiler the game was built with, or a
 measured equivalent. `config/toolchain.json` records the candidate profiles
 and the evidence each one rests on. The PS2 projects could not use a modern
-GCC; the Allegrex situation has to be measured the same way, not assumed.
+GCC; the Allegrex situation has to be **measured** the same way, not
+assumed.
 
 ### Step 4 — match the functions
 
@@ -144,7 +150,11 @@ defined in `docs/GATES.md`.
 | Tool | Role |
 | --- | --- |
 | `tools/psp_formats.py` | readers for `PARAM.SFO`, `~PSP`, `PSAR` and `Pack` |
-| `tools/psp_elf.py` | structure and function listing of an Allegrex ELF |
+| `tools/psp_crypto.py` | the KIRK primitives and the key material |
+| `tools/decrypt_psp.py` | the `~PSP` decryption |
+| `tools/psp_elf.py` | structure of an Allegrex ELF or PRX |
+| `tools/boot_inventory.py` | the structure and the function table of the executable |
+| `tools/function_inventory.py` | the frame-opening candidates of the code |
 | `tools/disc_inventory.py` | the disc manifest and the Pack index, with a `--check` mode |
 | `tools/check_repository.py` | the structural invariants of the repository |
 | `tools/progress.py` | the progress snapshot |

@@ -100,32 +100,97 @@ The update parameter file has `DISC_ID = MSTKUPDATE`, `CATEGORY = MG` and
 
 ## 3. `~PSP` — the encrypted executable
 
-Both `EBOOT.BIN` files start with the magic `~PSP` (`0x5053507E`).
+Both `EBOOT.BIN` files start with the magic `~PSP` (`0x5053507E`). The
+container is a **PSP module header**: the PSP firmware reads the fields
+below to find and unlock the payload.
 
-| Offset | Size | Disc executable | Update executable |
-| --- | --- | --- | --- |
-| 0x00 | 4 | `~PSP` | `~PSP` |
-| 0x04 | 4 | `0x00000000` | `0x00000800` |
-| 0x08 | 2 | `0x0101` | `0x0101` |
-| 0x0A | n | module name `dax` | module name `update` |
+| Offset | Size | Meaning |
+| --- | --- | --- |
+| 0x00 | 4 | magic `~PSP` |
+| 0x04 | 2 | u16 attribute |
+| 0x06 | 2 | u16 comp_attribute; bit 0 marks a compressed payload |
+| 0x08 | 2 | u16 module version, `0x0101` on the pinned target |
+| 0x0A | 28 | the module name, NUL padded: `dax`, `updater` |
+| 0x26 | 1 | u8 version |
+| 0x27 | 1 | u8 segment count |
+| 0x28 | 4 | u32 elf_size |
+| 0x2C | 4 | u32 psp_size, the size of the whole container |
+| 0x30 | 4 | u32 entry point |
+| 0x34 | 4 | u32 offset of the module info |
+| 0x38 | 4 | u32 bss_size |
+| 0x3C | 8 | u16 segment alignment, four entries |
+| 0x44 | 16 | u32 segment address, four entries |
+| 0x54 | 16 | u32 segment size, four entries |
+| 0x64 | 20 | u32 reserved, five entries |
+| 0x78 | 4 | u32 devkit version |
+| 0x7C | 4 | u32 decrypt mode |
+| 0x80 | 48 | key data 0 |
+| 0xB0 | 4 | s32 comp_size |
+| 0xB4 | 12 | reserved |
+| 0xC0 | 16 | key data 1 |
+| 0xD0 | 4 | u32 **the PRX tag** |
+| 0xD4 | 88 | the scheck: the SHA-1 and the signature |
+| 0x12C | 4 | u32 key data 2 |
+| 0x130 | 4 | u32 oe_tag |
+| 0x134 | 28 | key data 3 |
 
-The payload behind the header is encrypted with a key derived from the disc
-identifier, and the offset at `0x04` differs between the two files, so the
-header parameter is not a common payload offset. **The exact boundary of the
-encrypted payload is not established here**; recovering the ELF is done with
-a PSP implementation, not with a header offset.
+Read on the pinned disc:
 
-Decryption is delegated to a local PPSSPP build, which exports:
+| Field | Disc executable | Update executable |
+| --- | --- | --- |
+| module name | `dax` | `updater` |
+| elf_size | 4 949 041 | 3 951 368 |
+| psp_size | 4 949 392 | 3 951 712 |
+| decrypt mode | 9 | 3 |
+| **tag** | **`0xC0CB167C`** | `0x02000000` |
 
-```c
-int pspDecryptPRX(const unsigned char *encrypted, unsigned char *output,
-                   unsigned int size, const unsigned char *key);
-```
+### The decryption
 
-The same routine is used by the sibling project
-[`anthonyhfm/daxter-recompiled`](https://github.com/anthonyhfm/daxter-recompiled)
-and by `psprism`. The key is passed as `NULL`, which asks the implementation
-to derive it from the module.
+The payload behind the header is encrypted with the KIRK engine of the PSP.
+`tools/decrypt_psp.py` reproduces it; `tools/psp_crypto.py` holds the key
+material. The steps, for the type 0 and type 1 PRX:
+
+1. look the tag up in the tag table; it gives a 144-byte seed and a KIRK
+   key slot;
+2. for a type 1 PRX, decrypt 0xA0 bytes of the **rearranged** header with
+   the key of that slot: the SHA-1, the unused block and the first 0x70
+   bytes of the kirk block are adjacent in the file but not in the
+   rearranged header, so they have to be assembled before they can be
+   decrypted;
+3. check the SHA-1 of the header against the one in the file — this is
+   what tells a correct decryption from a wrong one;
+4. unlock the 0x70-byte KIRK command 1 header with the seed;
+5. run the KIRK command 1: recover the per-module AES and CMAC keys from
+   the header with the KIRK1 key, check the two CMAC hashes over the header
+   and over the payload, and decrypt the payload.
+
+The pinned target is a **type 1** PRX. The type is decided by the hash
+matching, not by the decrypt mode: the disc executable's mode is 9 and the
+update's is 3, and both are type 1 and type 0 respectively.
+
+### `BOOT.BIN` is the destination buffer
+
+`BOOT.BIN` is 4 949 041 bytes — **exactly the `elf_size` of the
+executable** — and it is **entirely zeroed**: not one non-zero byte in the
+whole file. It is not an older version of the executable, and it is not a
+compressed one. It is the buffer the firmware decrypts the executable into,
+shipped on the disc so the PSP does not have to allocate one.
+
+This is the answer to the question the first version of this document left
+open, and it is worth recording because the file's name invites the wrong
+guess.
+
+### The `UPDATE` folder is the firmware updater, not a game patch
+
+`PSP_GAME/SYSDIR/UPDATE/` holds the **PSP system firmware updater** that
+ships on the disc, not a later revision of *Daxter*:
+
+* its parameter file has `DISC_ID = MSTKUPDATE`, `CATEGORY = MG` and
+  `TITLE = "PSP® Update ver 2.60"`;
+* its executable is named `updater`;
+* its archive is the `PSAR` of a firmware image.
+
+So there is **one** target, not two: the disc executable, version 1.00.
 
 ---
 
@@ -136,15 +201,14 @@ to derive it from the module.
 | Offset | Size | Meaning |
 | --- | --- | --- |
 | 0x00 | 4 | magic `PSAR` |
-| 0x04 | 4 | u32 version, `3` |
-| 0x08 | 4 | u32 offset of the member table |
-| 0x0C | 4 | u32 member count, `1` |
-| 0x10 | 16 | opaque signature |
+| 0x04 | 1 | u8 version, `3` |
+| 0x08 | 4 | u32 total length of the records |
+| 0x10 | — | the records begin here |
 
-The member table is recorded at offset `0x00E1FA10`, that is 16 bytes before
-the end of the 14 809 632-byte file. **The bytes there have high entropy and
-do not decode as offsets, sizes and names**: the tail of the file is
-encrypted with a disc-derived key, exactly like the executable.
+The records are a flat sequence, each made of an encrypted block, an entry
+description and the file contents, and the whole thing is encrypted with a
+disc-derived key. The bytes at the recorded table offset have high entropy
+and do not decode as offsets, sizes and names.
 
 The reader therefore reports the header and leaves the member list empty
 rather than inventing one. Recovering the members needs the same disc key
@@ -242,13 +306,86 @@ does not. The `Pack` containers are an asset research problem.
 
 ---
 
-## 6. What is still open
+## 6. The decrypted executable
 
-* the payload boundary of the `~PSP` header, and the derivation of the disc
-  key;
-* the member table of the `PSAR` archive;
+The ELF the decryption yields is 4 949 041 bytes, and it is a **PSP PRX**:
+
+| Field | Value |
+| --- | --- |
+| e_type | `0xFFA0`, the type the PSP SDK gives to a PRX |
+| e_machine | 8, MIPS |
+| e_entry | `0x00000000` |
+| e_phnum | 2 |
+| e_shnum | 60 |
+| module name | `dax` |
+| SHA-1 | `4a348e91e45fb17c23f2e8b72ce67113e7c4e4c2` |
+| SHA-256 | `df13fd9d044044e0c17198b2837bdf6aacd8a9d1ee85680670a40e00590d67d2` |
+
+The two segments are:
+
+| Segment | File offset | Virtual address | File size | Memory size | Flags |
+| --- | --- | --- | --- | --- | --- |
+| 0 | `0x74` | `0x00000000` | 3 553 940 | 3 553 940 | read, execute |
+| 1 | `0x363B08` | `0x00363A98` | 304 772 | 568 288 | read, write |
+
+The 60 sections are the usual PRX ones: `.text` of 3 335 156 bytes, an
+`.eh_frame`, the `sceStub` sections, and the pairs of `SHT_PSPPCREL`
+sections that hold the unrelocated data beside their relocated twins.
+
+**There is no symbol table.** The ELF's symbol table section holds 16 bytes:
+one null symbol and nothing else. The functions therefore have neither names
+nor sizes, and the inventory has to be recovered from the code.
+
+The only names in the file are in the **module info**, at `0x0032ED54`:
+the module name and the list of the 25 libraries the game imports.
+
+```
+sceUtility        IoFileMgrForUser   LoadExecForUser    ModuleMgrForUser
+StdioForUser      SysMemUserForUser  ThreadManForUser   UtilsForUser
+sceSuspendForUser sceAudio           Kernel_Library     sceCtrl
+sceDisplay        sceGe_user         scePower            sceUsb
+sceMpeg           sceUmdUser         sceImpose           sceWlanDrv
+sceNet            sceNetAdhoc        sceNetAdhocctl      sceSasCore
+sceAtrac3plus
+```
+
+### The function candidates
+
+`tools/function_inventory.py` scans the executable segment for the place
+where the code opens a stack frame the way the Allegrex compiler does —
+`addiu $sp, $sp, -N` — and reports **14 655 candidates**, of which **8 794**
+save the return address within the next four instructions.
+
+Those are candidates, not functions. A frame can be opened by a function
+that never returns, by a jump table, or by a hand-written block, and the
+inventory is the input of a review rather than its result. The table is
+`config/boot/functions.tsv`.
+
+The prologue of a function of the target, as read from the code, is the
+usual one:
+
+```
+addiu $sp, $sp, -0x30
+sw    $s1, 0x24($sp)
+move  $s1, $a0
+sw    $s0, 0x20($sp)
+sw    $ra, 0x28($sp)
+```
+
+Note that the return address is saved *after* the callee-saved registers,
+not immediately after the frame is opened — which is why the scan looks a
+few instructions ahead.
+
+---
+
+## 7. What is still open
+
+* the derivation of the disc key, and with it the members of the `PSAR`
+  archive;
 * the meaning of the five header words of `Pack`, and of the three words
   inside the `CfCm` header;
-* the relation between `BOOT.BIN` and `EBOOT.BIN`;
 * the `.at3` audio and `.pmf` movie containers, which are the same on every
-  PSP title and are therefore not a Daxter-specific problem.
+  PSP title and are therefore not a Daxter-specific problem;
+* the boundary of each of the 14 655 function candidates: nothing has been
+  reviewed yet, so no function is known to exist yet, let alone to be
+  named.

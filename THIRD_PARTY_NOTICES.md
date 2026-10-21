@@ -7,18 +7,35 @@ referenced but **not** vendored here.
 
 ## Vendored
 
-Nothing is vendored. The repository contains no third-party source code.
+### `tools/psp_crypto.py` — the KIRK key material
+
+The key vault of the KIRK engine (128 AES-128 keys, indexed by key slot),
+the KIRK1 key, and the per-tag seed blocks of the retail executables.
+
+* Origin: **PPSSPP**, the open-source reference implementation of the PSP
+  (`ext/libkirk/kirk_engine.c` and `Core/ELF/PrxDecrypter.cpp`), which took
+  them from the **JPCSP** and **PSARDUMPER** projects.
+* Licence of the original: **GPL-2.0-or-later**.
+* Licence here: the file carries the GPL-3.0-or-later of this repository.
+  The GPL-2.0-or-later licence of PPSSPP permits that: a derivative of a
+  GPL-2.0-or-later work may be distributed under the GPL-3.
+
+The file is data, not code: a table of keys and a description of where each
+one sits. It is vendored because the decryption needs it and because
+fetching it from a checkout of PPSSPP at run time would make the tool
+depend on a repository it has no business depending on.
+
+Everything else in `tools/` is this project's own work.
 
 ## Adapted
 
 ### `tools/psp_elf.py`
 
 The structure of the reader — the header validation, the program and section
-reporting, the function listing restricted to the symbols that carry a size
-— follows the ELF readers of the sibling OpenRAC projects
+reporting — follows the ELF readers of the sibling OpenRAC projects
 (`OpenRAC/rac-sac-decomp`, `OpenRAC/rac5-sm-decomp`), which are themselves
-GPL-3.0. The reader here is written for the Allegrex and accepts the
-`~PSP` container case explicitly.
+GPL-3.0. The reader here is written for the Allegrex, accepts the PSP PRX
+type `0xFFA0`, and copes with an executable that has no symbols.
 
 Attribution: the `OpenRAC` organisation.
 
@@ -39,9 +56,22 @@ code is copied here; the route is *called*.
 * <https://github.com/anthonyhfm/psprism>
 * Licence: GPL-3.0.
 
-The PSP static-recompilation toolchain. It establishes both the decryption
-route and the expectation that the Allegrex code can be recompiled. No code
-is copied here.
+The PSP static-recompilation toolchain. It establishes that the Allegrex
+code of this game can be recompiled. No code is copied here.
+
+### `PPSSPP`
+
+* <https://github.com/hrydgard/ppsspp>
+* Licence: GPL-2.0-or-later.
+
+The reference implementation of the PSP. Its `Core/ELF/PrxDecrypter.cpp`
+and `ext/libkirk` describe the `~PSP` container, the PRX types and the KIRK
+primitives, and its key vault is vendored in `tools/psp_crypto.py` as
+described above.
+
+Its release build does **not** export `pspDecryptPRX`, so the decryption
+could not simply be called: the release exports only two vendor symbols.
+That is why this project implements the algorithm itself.
 
 ### `caws/daxtertoolset`
 
@@ -63,6 +93,12 @@ The reference implementation of the PSP. Its `pspDecryptPRX` routine is the
 documented route for decrypting a `~PSP` executable. It is **called as an
 external program or shared library** on the user's machine; it is not
 vendored, linked or modified here.
+
+### `PPSSPP` (continued)
+
+The `PSAR` format of the firmware updater, and the reading of the `~PSP`
+header, follow `docs/PsarFileFormat.md` of PPSSPP and the description of
+the PRX types in `Core/ELF/PrxDecrypter.h`.
 
 ### `OpenRAC` sibling projects
 

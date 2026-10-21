@@ -52,6 +52,7 @@ def snapshot() -> dict[str, object]:
 
     executable = target.get("executable", {})
     decrypted = bool(executable.get("decrypted_sha256"))
+    code = target.get("code", {})
 
     return {
         "target": target.get("game"),
@@ -61,12 +62,14 @@ def snapshot() -> dict[str, object]:
         "pack_containers": len(packs),
         "level_containers": len(modules),
         "blobs_in_packs": blobs,
-        "code_objects": 1,
+        "code_objects": code.get("objects", 0),
         "executable_decrypted": decrypted,
+        "function_candidates": code.get("function_candidates", 0),
+        "functions_saving_ra": code.get("functions_saving_ra", 0),
         "proved_bodies": len(bodies),
         "parked_attempts": len(parked),
         "functions_matched": 0,
-        "gates_passed": 0,
+        "gates_passed": 1 if decrypted else 0,
     }
 
 

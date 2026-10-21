@@ -64,25 +64,31 @@ program bytes at every applicable placement** can establish a match.
 Compiling successfully, matching a few instructions, or comparing masked
 bytes cannot.
 
-## The one thing this project does not have yet
+## The gate this project has and the PS2 siblings do not
 
-The PS2 siblings could start from a retail ELF and disassemble it. **Daxter
-for PSP cannot**: the executable on the disc is encrypted behind the `~PSP`
-container, and the project cannot read it until the decryption step is done
-on a lawful local copy.
+The PS2 siblings could open the retail executable on day one. This project
+could not: the executable on the disc is encrypted behind the `~PSP`
+container.
 
-So the **first gate of this project is not a body gate, it is a visibility
-gate**:
+The gate is now **passed**, and its evidence is published: the decrypted
+ELF's SHA-256 is in `config/target.json`, and its structure is in
+`config/boot/summary.json`. The decrypted ELF itself is never committed.
 
-> no function may be named, counted or claimed before the decrypted
-> executable has been produced locally and its structure has been measured
-> with `tools/psp_elf.py`.
+So the rules for the work that follows are the ordinary ones:
 
-Decryption happens on the contributor's machine. The decrypted executable is
-never committed. What *is* committed is the **structure**: the section table,
-the symbol table, the function inventory, the hashes, the counts — all of
-which are research metadata, and all of which `tools/psp_elf.py` and
-`tools/disc_inventory.py` already produce.
+* the **function inventory** is `config/boot/functions.tsv`: 14 655
+  frame-opening candidates. A candidate is **not** a function. Before a
+  candidate is used as the target of a body, its boundary has to be
+  established: that it is entered from a call, that it returns through
+  `$ra`, and where it ends. A candidate with an unestablished boundary is
+  provisional and is not counted.
+* the **names** have to be proved. The symbol table of the retail
+  executable is empty. A name may come from a string, from a caller, from
+  the sibling projects, or from nowhere — and "nowhere" is an acceptable
+  answer: the reference name may be `func_00001234`. What is not
+  acceptable is a plausible name with no evidence behind it.
+* the **decrypted executable** stays local. So does every module, listing
+  and report derived from it.
 
 ## Never commit
 

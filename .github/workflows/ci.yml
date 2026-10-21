@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: install the dependencies
+        run: python3 -m pip install --quiet -r requirements.txt
+
       - name: unit tests
         run: python3 -m unittest discover -s tests -v
 
@@ -31,9 +34,10 @@ jobs:
       - name: the published tables are consistent with each other
         run: |
           python3 - <<'PY'
-          import csv, json, pathlib, sys
+          import csv, json, pathlib
           root = pathlib.Path(".")
           target = json.loads((root / "config" / "target.json").read_text())
+
           with (root / "config" / "disc" / "pack_index.tsv").open(newline="") as handle:
               packs = list(csv.DictReader(handle, delimiter="\t"))
           with (root / "config" / "levels" / "modules.tsv").open(newline="") as handle:
@@ -44,5 +48,18 @@ jobs:
           for pack, module in zip(packs, modules):
               assert pack["path"] == module["path"], "the catalogues disagree"
               assert pack["entries"] == module["entries"], "the catalogues disagree"
-          print(f"{len(packs)} asset containers, consistent")
+
+          with (root / "config" / "boot" / "functions.tsv").open(newline="") as handle:
+              functions = list(csv.DictReader(handle, delimiter="\t"))
+          assert len(functions) == target["code"]["function_candidates"], \
+              "the pinned candidate count and the table disagree"
+
+          summary = json.loads((root / "config" / "boot" / "summary.json").read_text())
+          assert summary["sha256"] == target["executable"]["decrypted_sha256"], \
+              "the summary and the target disagree on the executable"
+          assert summary["module_info"]["name"] == target["executable"]["module_name"], \
+              "the summary and the target disagree on the module"
+
+          print(f"{len(packs)} asset containers, "
+                f"{len(functions)} function candidates, consistent")
           PY

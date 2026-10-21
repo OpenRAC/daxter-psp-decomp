@@ -4,7 +4,7 @@
   "system": "PSP",
   "type": ["decomp", "recomp"],
   "project": "daxter-psp-decomp",
-  "status": "exploring",
+  "status": "in-progress",
   "toolchain": ["psp-gcc", "PSPRecomp"],
   "approach": "Matching decompilation of the Allegrex (MIPS32r2) executable of Daxter for PSP: authored C/C++ that builds to a byte-identical copy of the retail executable.",
   "original": {
@@ -18,14 +18,15 @@
   ],
   "links": [
     { "label": "Sibling PSP project", "url": "https://github.com/OpenRAC/rac-sac-decomp" },
-    { "label": "Format research", "url": "https://github.com/OpenRAC/daxter-psp-decomp/blob/main/docs/FORMATS.md" }
+    { "label": "Format research", "url": "https://github.com/OpenRAC/daxter-psp-decomp/blob/main/docs/FORMATS.md" },
+    { "label": "State of the project", "url": "https://github.com/OpenRAC/daxter-psp-decomp/blob/main/docs/STATE.md" }
   ],
   "help": [
-    "decrypting the ~PSP executable",
+    "reviewing the function candidates into a layout",
     "naming functions",
     "qualifying a toolchain profile",
     "matching the first functions"
   ],
   "tags": ["Insomniac Games", "Daxter", "MIPS Allegrex", "PSP", "UMD"],
-  "notes": "Early stage. The disc is measured and its four container formats are read (PARAM.SFO, ~PSP, PSAR, Pack); the 342 asset containers are inventoried; the game code is a single monolithic executable behind the ~PSP encryption, not a loader plus level overlays as on PlayStation 2. No function has been matched yet."
+  "notes": "The visibility gate is passed: the ~PSP executable is decrypted by the project's own tool and measured. The game code is one monolithic, stripped PSP PRX of 3335156 bytes of code behind the ~PSP encryption; there is no symbol table, so the functions have no names and their boundaries are not established yet. The inventory holds 14655 frame-opening candidates, of which 8794 save the return address. No function has been matched."
 }

@@ -1,9 +1,15 @@
-# The repository's own tools need nothing but the standard library.
-#
-# The optional dependency below is used only by an optional disassembler
-# helper; nothing in tools/ or tests/ imports it, and the checks pass
-# without it.
+# The repository's own tools need the standard library, except the
+# decryption, which needs AES-128.
 #
 #   pip install -r requirements.txt
 #
+# pycryptodome is used by tools/psp_crypto.py, for the AES-128-CBC and the
+# AES-CMAC of the KIRK engine.  Nothing else in tools/ or tests/ imports a
+# third-party package, and every check passes without one.
+#
+#   capstone          optional: only for a local disassembly, never for a
+#                     published table.  The repository does not depend on it.
+
+pycryptodome>=3.19
+
 # capstone>=5.0
