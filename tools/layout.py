@@ -257,6 +257,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--work", type=Path, default=Path("work"))
     parser.add_argument("--lots", type=int, default=6)
     parser.add_argument("--per-lot", type=int, default=40)
+    parser.add_argument("--skip", type=int, default=0,
+                        help="skip the first N shortlist entries, to cut the "
+                             "lots of the next wave without re-cutting the "
+                             "ones already reviewed")
+    parser.add_argument("--first-lot", type=int, default=1,
+                        help="the number of the first lot to write")
     args = parser.parse_args(argv)
 
     data = args.elf.read_bytes()
@@ -269,13 +275,14 @@ def main(argv: list[str] | None = None) -> int:
     # leverage, then stratified by size.
     eligible = [row for row in bodies if int(row["calls"]) > 0]
     eligible.sort(key=lambda row: (-int(row["calls"]), -int(row["size"])))
-    shortlist = pick_stratified(eligible, args.lots * args.per_lot)
+    shortlist = pick_stratified(eligible, args.skip + args.lots * args.per_lot)
+    shortlist = shortlist[args.skip:]
 
     lots_dir = args.work / "lots"
     lots_dir.mkdir(parents=True, exist_ok=True)
     for index in range(args.lots):
         chunk = shortlist[index * args.per_lot:(index + 1) * args.per_lot]
-        path = lots_dir / f"L{index + 1:02d}.tsv"
+        path = lots_dir / f"L{args.first_lot + index:02d}.tsv"
         with path.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
             writer.writerow(["start", "end", "size", "bound_source", "evidence",
