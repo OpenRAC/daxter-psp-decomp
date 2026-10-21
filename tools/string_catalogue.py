@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import csv
 import re
+import struct
 import sys
 from pathlib import Path
 
@@ -26,10 +27,46 @@ MIN_LENGTH = 4
 
 
 def catalogue(data: bytes, minimum: int = MIN_LENGTH) -> list[tuple[int, str]]:
-    """Return the (address, text) of the printable strings of the file."""
+    """Return the (address, text) of the printable strings of the file.
+
+    The addresses are **virtual** addresses, the ones the code uses, not
+    file offsets.  The two are not the same, and mixing them is a trap:
+    the code segment is at file offset 0x74 for the virtual address zero,
+    and the data segment is at 0x00363B08 for 0x00363A98.
+    """
     pattern = rb"[\x20-\x7e]{%d,}" % minimum
-    return [(match.start(), match.group().decode("ascii"))
-            for match in re.finditer(pattern, data)]
+    segments = _segments(data)
+    out: list[tuple[int, str]] = []
+    for match in re.finditer(pattern, data):
+        address = _to_virtual(segments, match.start())
+        if address is None:
+            continue
+        out.append((address, match.group().decode("ascii")))
+    return out
+
+
+def _segments(data: bytes) -> list[tuple[int, int, int, int]]:
+    """Return the (file offset, file size, virtual address, flags) of the loads."""
+    if data[:4] != b"\x7fELF":
+        return []
+    _kind, _machine, _version, _entry, phoff, _shoff, _flags, _ehsize, \
+        phentsize, phnum, _shentsize, _shnum, _shstrndx = struct.unpack_from(
+            "<HHIIIIIHHHHHH", data, 16)
+    out = []
+    for index in range(phnum):
+        ptype, offset, vaddr, _paddr, size, _memsz, flags, _align = \
+            struct.unpack_from("<IIIIIIII", data, phoff + index * phentsize)
+        if ptype == 1:
+            out.append((offset, size, vaddr, flags))
+    return out
+
+
+def _to_virtual(segments: list[tuple[int, int, int, int]],
+                offset: int) -> int | None:
+    for file_offset, size, vaddr, _flags in segments:
+        if file_offset <= offset < file_offset + size:
+            return vaddr + (offset - file_offset)
+    return None
 
 
 def main(argv: list[str] | None = None) -> int:

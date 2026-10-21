@@ -44,7 +44,16 @@ LOAD_OPCODES = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26}
 
 #: The main opcodes that write nothing.
 STORE_OPCODES = {0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2E}
-BRANCH_OPCODES = {0x04, 0x05, 0x06, 0x07, 0x08, 0x09}
+
+#: The main opcodes of the branches, including the *likely* ones.
+#:
+#: 0x01 is the REGIMM family (bltz, bgez, and their likely forms), 0x04 to
+#: 0x09 are beq, bne, blez, bgtz, j and jal, and 0x14 to 0x17 are beql,
+#: bnel, blezl and bgtzl.  The likely branches execute their delay slot
+#: whatever the condition is, and a control-flow graph that does not know
+#: about them makes 112 bodies look broken.
+BRANCH_OPCODES = {0x01, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+                  0x14, 0x15, 0x16, 0x17}
 
 
 def _rs(word: int) -> int:
