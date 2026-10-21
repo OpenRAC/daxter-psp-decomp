@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import disc_inventory  # noqa: E402
 import decrypt_psp  # noqa: E402
 import function_inventory  # noqa: E402
+import harness  # noqa: E402
 import merge_layout  # noqa: E402
 import psp_crypto  # noqa: E402
 import psp_elf  # noqa: E402
@@ -358,6 +359,93 @@ class MergeTests(unittest.TestCase):
             rows = _read_layout(out)
             self.assertEqual(rows[0]["name"], "CFile_Open")
             self.assertIn("corrects CFile_Close", rows[0]["name_evidence"])
+
+
+def build_object(text: bytes, name: str = "body") -> bytes:
+    """Build a relocatable object with one function symbol.
+
+    The layout is the minimum an ELF reader needs: a null section, a
+    .text, a .symtab and a .strtab.
+    """
+    strtab = b"\x00" + name.encode("ascii") + b"\x00"
+    shstrtab = b"\x00.text\x00.symtab\x00.strtab\x00"
+    shstr_names = {".text": 1, ".symtab": 7, ".strtab": 13}
+
+    header_size = 52
+    text_offset = header_size
+    symtab_offset = text_offset + len(text)
+    # one null symbol, then the function.  In a relocatable object the
+    # value of a symbol is the offset of the byte inside its section,
+    # which here is the file offset of the text.
+    symtab = struct.pack("<IIIBBH", 0, 0, 0, 0, 0, 0)
+    symtab += struct.pack("<IIIBBH", 1, text_offset, len(text), 0x12, 0, 1)
+    strtab_offset = symtab_offset + len(symtab)
+    shstrtab_offset = strtab_offset + len(strtab)
+    shoff = shstrtab_offset + len(shstrtab)
+
+    header = bytearray(b"\x7fELF\x01\x01\x01\x00" + b"\x00" * 8)
+    header += struct.pack("<HH", 1, 8)              # ET_REL, EM_MIPS
+    header += struct.pack("<I", 1)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)                  # e_phoff
+    header += struct.pack("<I", shoff)              # e_shoff
+    header += struct.pack("<I", 0)
+    header += struct.pack("<HHHHHH", header_size, 0, 0, 40, 5, 4)
+
+    sections = [
+        (0, 0, 0, 0, 0, 0, 0, 0, 0, 0),             # the null section
+        (shstr_names[".text"], 1, 0x6, 0, text_offset, len(text), 0, 0, 4, 0),
+        (shstr_names[".symtab"], 2, 0, 0, symtab_offset, len(symtab), 3, 1, 4, 16),
+        (shstr_names[".strtab"], 3, 0, 0, strtab_offset, len(strtab), 0, 0, 1, 0),
+        (0, 3, 0, 0, shstrtab_offset, len(shstrtab), 0, 0, 1, 0),
+    ]
+    table = b"".join(struct.pack("<IIIIIIIIII", *section) for section in sections)
+    return (bytes(header) + text + symtab + strtab + shstrtab + table)
+
+
+class HarnessTests(unittest.TestCase):
+    def test_refuses_a_missing_symbol(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            elf = root / "retail.elf"
+            elf.write_bytes(build_prx(b"\x00" * 64))
+            obj = root / "body.o"
+            obj.write_bytes(build_object(b"\x00" * 8))
+            report = harness.compare_symbols(elf, obj, "nope", 0x100)
+            self.assertEqual(report["result"], "refused")
+
+    def test_compares_and_finds_the_first_difference(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            body = b"\x01\x02\x03\x04\x05\x06\x07\x08"
+            elf = root / "retail.elf"
+            elf.write_bytes(build_prx(body))
+            obj = root / "body.o"
+            obj.write_bytes(build_object(body))
+            report = harness.compare_symbols(elf, obj, "body", 0)
+            self.assertEqual(report["result"], "exact")
+            self.assertEqual(report["size"], len(body))
+
+            obj2 = root / "other.o"
+            other = bytearray(body)
+            other[5] = 0xFF
+            obj2.write_bytes(build_object(bytes(other)))
+            report = harness.compare_symbols(elf, obj2, "body", 0)
+            self.assertEqual(report["result"], "mismatch")
+            self.assertEqual(report["first_difference"], 5)
+
+    def test_reports_a_size_difference(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            elf = root / "retail.elf"
+            elf.write_bytes(build_prx(b"\x00" * 8))
+            obj = root / "body.o"
+            obj.write_bytes(build_object(b"\x00" * 4))
+            # the caller knows the retail body is 8 bytes long
+            report = harness.compare_symbols(elf, obj, "body", 0, size=8)
+            self.assertEqual(report["result"], "mismatch")
+            self.assertEqual(report["reason"], "the compiled body has another size")
+            self.assertEqual(report["compiled_size"], 4)
 
 
 class InventoryTests(unittest.TestCase):
