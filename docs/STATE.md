@@ -23,7 +23,8 @@ No function has been matched.
 | **the build is identified** | engine SCREAM, object layer Aurora, port by Ready At Dawn, built `Mar 28 2005` | `config/target.json` |
 | **the module map is published** | 25 source paths in 11 libraries | `config/boot/modules.tsv` |
 | **the code's idioms are measured** | 888 485 instructions, 16-byte stack slots, no `$gp`, no debug-C idiom | `config/boot/idioms.json` |
-| **the layout is established** | 421 targets reviewed, 421 confirmed as functions, 48 named | `config/boot/layout.tsv` |
+| **the layout is established** | 661 targets reviewed, 661 confirmed as functions, 84 named | `config/boot/layout.tsv` |
+| **the shared bodies are known** | 652 distinct bodies, 8 groups of two or more | `config/boot/placements.tsv` |
 | the readers are tested | synthetic fixtures, no game data in the tests | `tests/test_tools.py` |
 
 ### The decryption
@@ -92,12 +93,46 @@ yet, and if it replays neither the prologue rule nor the form of the
 **Hypothesis H1 is open, not proved.** The measurement is the advance; the
 qualification is not.
 
-Fourteen lots of forty targets, each verified against the code, and the
+### What wave 3 established
+
+**Twenty lots of forty targets, each verified against the code**, and the
 sweep corrected to follow the control-flow graph.
 
-**421 distinct bodies reviewed. 421 confirmed as functions. None rejected,
-none left unknown. 48 names recovered with evidence**, three of them
-correcting a name of wave 1.
+**661 distinct bodies reviewed. 661 confirmed as functions. None rejected,
+none left unknown. 84 names recovered with evidence**, three of them
+correcting a name of wave 2.
+
+The sweep now agrees with the review on **99,4 %** of the bodies. It
+follows the control-flow graph, and the graph reads the **jump tables**:
+232 computed jumps met, 221 tables resolved, 2 488 cases followed, and not
+one of them outside the body that holds it.
+
+The wave also bought the **placement table**. When two bodies hold the
+same bytes, the second is a placement of the first, and one authored
+source satisfies both — 652 distinct bodies over 661, in eight groups. It
+is a cross-check on the naming too: `quaternion_to_matrix` was found
+independently by two lots, at `0x000A35A4` and at `0x000E9814`, and the
+hash of the body proves that the two are the same body.
+
+And five traps of the resolvers, each of which was producing a wrong
+answer, each found by a lot:
+
+* the register that is written is **dead** — a superseded `lui` must not
+  pair with a later completion;
+* the immediate of `addiu` is **signed**, and the unsigned value puts the
+  address in the wrong page, where another string waits;
+* a **code address can look like a string**: two bodies were "reading" a
+  comma and a digit four, and both were code;
+* the main opcode of `jal` is **3**, not `0x0C` which is `andi`, and the
+  main opcode of `j` is **2**, not `0x08` which is `addi`;
+* on the Allegrex, the **delay slot of a likely branch** is executed only
+  if the branch is taken.
+
+The four bodies the sweep still gets wrong contain no computed jump:
+they stop on a **strong start** inside the body, which is a class of
+error of its own, and it is written down rather than papered over.
+
+
 
 The sweep now agrees with the review on **99,1 %** of the bodies, against
 93,3 % before. The rule it implements is the one the review measured: *a
