@@ -50,6 +50,7 @@ REQUIRED_PATHS = [
     "config/boot/idioms.json",
     "config/boot/layout.tsv",
     "config/boot/layout_summary.json",
+    "config/boot/modules.tsv",
     "tools/psp_formats.py",
     "tools/psp_crypto.py",
     "tools/decrypt_psp.py",
@@ -164,6 +165,7 @@ def check_tables(report: Report) -> None:
         "config/levels/modules.tsv": ("path", "version", "entries", "types"),
         "config/boot/functions.tsv": ("address", "file_offset", "frame",
                                       "saves_ra", "gp_setup"),
+        "config/boot/modules.tsv": ("source", "address", "library"),
     }
     for relative, header in expectations.items():
         path = ROOT / relative
