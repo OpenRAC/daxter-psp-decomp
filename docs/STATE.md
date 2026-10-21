@@ -120,11 +120,37 @@ it is off by default, and GCC 3.3.6 emits the idiom *with or without*
 it. The absence of the idiom in the retail code is a property of **the
 code**, not evidence about the compiler.
 
-**H2 is open, and it is the sharpest form of the question.** The
-`ee-gcc` 2.95.2 of the sibling projects reproduces **both** properties of
-the retail code, and differs on exactly one thing: its `strcmp` uses
-`beql` where the retail code uses `bnel`. Building the **same
-configuration** on the 3.x line decides between the two lines of GCC.
+**H2 is refuted.** A GCC 3.3.6 was built in the **PlayStation 2 EE
+configuration** — a new target, `mips64r5900el-unknown-elf`, ported from
+the SDK 2.95.2's `elf5900.h` — and it replays neither the prologue rule
+nor the form of the `strcmp`.
+
+**And the 2.95 line is excluded by a measurement that needs no compiler
+at all.** The retail code holds **6 941 branch-likely instructions** —
+`beql`, `bnel`, `blezl`, `bgtzl`, `bltzl`, `bgezl` — of which **3 089**
+are `bnel`. A compiler of the **2.95 line emits no branch-likely at
+all**; a compiler of the **3.x line** does. The two 2.95.2 witnesses were
+built and measured, and neither ever produces one.
+
+> So the **3.x line is in and the 2.95 line is out** — and the 13-slot
+> `strcmp` of the retail code is a shape no *stock* newlib produces under
+> either line, which says the **PSPSDK shipped a patched newlib**, and
+> that the slot count was never a valid discriminator of the compiler.
+> The method caught its own bad test.
+
+**H3 is open, and it is the only configuration left standing.** The retail
+code needs, at the same time:
+
+| | alignment of the stack | width of the save slot |
+| --- | --- | --- |
+| o32 / o64 / eabi | 8 bytes | 4 bytes |
+| n32 / n64 | **16 bytes** | 8 bytes |
+| **the retail code** | **16 bytes** | **4 bytes** |
+
+No stock GCC configuration has both. `MIPS_STACK_ALIGN` (mips.h:2876) and
+`UNITS_PER_WORD` (mips.h:1490) are where they come from. The PSPSDK's
+**custom Allegrex target** has both — and it is the configuration the
+retail code was built with.
 
 ### What wave 3 established
 
