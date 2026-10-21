@@ -66,6 +66,20 @@
     "functions_saving_ra": 8794,
     "symbol_table": "empty: the ELF carries one null symbol, so the functions have no names and no sizes"
   },
+  "build": {
+    "engine": "SCREAM, the Ratchet & Clank engine of the studio",
+    "engine_name_at": "0x0033E24C",
+    "port_developer": "Ready At Dawn Studios, LLC.",
+    "port_developer_at": "0x0032F444",
+    "object_layer": "Aurora, the object layer of the engine",
+    "object_layer_at": "0x00331D94",
+    "build_date": "Mar 28 2005",
+    "build_date_at": "0x0033E2F0",
+    "version_banner_at": "0x0032F3A8",
+    "branch": "master",
+    "copyright": "2004-2005",
+    "note": "the PSP executable carries no compiler version string, so the compiler that built it has to be established by measurement rather than read off the binary"
+  },
   "asset_containers": {
     "path": "PSP_GAME/USRDIR/data",
     "count": 342,
