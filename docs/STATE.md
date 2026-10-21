@@ -64,6 +64,34 @@ them is "it looks like code":
 
 ### What wave 2 established
 
+The compiler that built the retail bytes is not guessed, it is **measured**,
+and the measurement **discriminates**:
+
+| Property | Retail | GCC 8.2 / 15.2 (Allegrex) | GCC 2.95.2 (EE probe) |
+| --- | --- | --- | --- |
+| `$ra` inside the frame | 1 to 4 slots below the top — 1524, 3033, 2133, 6798 | always on top, 15/15 and 16/16 | at frame − 16, 26/28 |
+| frames a multiple of 16 | 13 494 of 13 495 | 15/20 and 13/20 | 28/28 |
+| the `strcmp` at `0x00245504` | 13 slots, `lb`, `lbu`−`lbu`, no masking | 11 or 19 slots, masks with `andi` | 13 slots, same form, `beql` where the retail has `bnel` |
+
+The rule of the retail code is the rule of an **old 64-bit MIPS GCC**: the
+callee-saved registers are pushed first, at the bottom of a save area
+aligned on sixteen bytes, and `$ra` is pushed last, just above them. A
+modern GCC does not produce that, and the probe that reproduces it is the
+Sony `ee-gcc` of the sibling PlayStation 2 projects.
+
+The library is the **newlib 1.15 size variant**, the one selected by
+`PREFER_SIZE_OVER_SPEED` — so it was built with `-Os`.
+
+The standing hypothesis, **H1**: the retail build is a **GCC of the 3.x
+line**, Allegrex target, **not** in the debug-C mode, with the library
+compiled for size. It is falsifiable: the GCC 3.3 Allegrex is not built
+yet, and if it replays neither the prologue rule nor the form of the
+`strcmp`, H1 is false. The build recipe is written down, in
+`work/TOOLCHAIN/scratch/legacy33/`.
+
+**Hypothesis H1 is open, not proved.** The measurement is the advance; the
+qualification is not.
+
 Fourteen lots of forty targets, each verified against the code, and the
 sweep corrected to follow the control-flow graph.
 

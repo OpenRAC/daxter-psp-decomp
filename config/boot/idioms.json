@@ -17,9 +17,11 @@
     "15": 122
   },
   "equality_idiom": {
-    "note": "the GCC debug-C mode tests equality with sltiu rX,rX,1; its absence is a property of the compiler configuration, not of the code",
+    "note": "the GCC built in its debug-C mode tests equality with sltu rX,rX,1, or with sltiu when the immediate is one; the absence of both is a property of the compiler configuration, not of the code",
     "sltiu_same_register_immediate_1": 0,
-    "sltiu_total": 3528
+    "sltiu_total": 1,
+    "sltu_same_register_immediate_1": 0,
+    "sltu_total": 3528
   },
   "frames": {
     "distinct_sizes": 94,
@@ -168,6 +170,20 @@
     },
     "note": "no $gp at all means the code is linked at a fixed address and reaches its data through absolute addresses",
     "position_independent": false
+  },
+  "prologue_rule": {
+    "distinct_frame_sizes": 94,
+    "frames_multiple_of_16": 93,
+    "note": "where the saved return address sits inside the frame, in slots of four bytes from the bottom of the frame. The value is the number of callee-saved registers that were pushed before it, plus one. A value that is always 1 means the return address is on top of the frame, the way a modern GCC puts it; a spread means the callee-saved registers are pushed first, in a save area aligned on sixteen bytes.",
+    "slots_below_ra": {
+      "1": 1524,
+      "2": 3033,
+      "3": 2133,
+      "4": 6798,
+      "11": 3,
+      "12": 3,
+      "23": 1
+    }
   },
   "return_address": {
     "distinct_offsets": 247,

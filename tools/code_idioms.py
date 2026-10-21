@@ -87,12 +87,18 @@ def measure(data: bytes) -> dict[str, object]:
     sw_ra = [word for word in words if (word & 0xFFFF0000) == 0xAFBF0000]
     ra_offsets = Counter(_imm(word) for word in sw_ra)
 
+    sltu = [word for word in words
+            if (word & 0xFC000000) == 0 and _funct(word) == 0x2B and _rs(word)]
     sltiu = [word for word in words
-              if (word & 0xFC000000) == 0 and _funct(word) == 0x2B and _rs(word)]
-    equality_idiom = sum(1 for word in sltiu
+             if (word & 0xFC000000) == 0x0C000000 and _funct(word) == 0x0B
+             and _rs(word)]
+    equality_idiom = sum(1 for word in sltu
                          if _rs(word) == _rt(word) and _imm(word) == 1)
+    equality_idiom_imm = sum(1 for word in sltiu
+                             if _rs(word) == _rt(word) and _imm(word) == 1)
 
-    # How far is the save of the return address from the frame opening?
+    # How far is the save of the return address from the frame opening, and
+    # where does it sit inside the frame?
     frame_at: dict[int, int] = {}
     for index, word in enumerate(words):
         if (word & 0xFFFF0000) == 0x27BD0000:
@@ -102,12 +108,21 @@ def measure(data: bytes) -> dict[str, object]:
             if immediate < 0:
                 frame_at[index] = -immediate
     distance: Counter[int] = Counter()
+    ra_placement: Counter[int] = Counter()
     for index in sorted(frame_at):
         for ahead in range(1, 16):
             if index + ahead >= len(words):
                 break
-            if (words[index + ahead] & 0xFFFF0000) == 0xAFBF0000:
+            word = words[index + ahead]
+            if (word & 0xFFFF0000) == 0xAFBF0000:
                 distance[ahead] += 1
+                offset = _imm(word)
+                if offset & 0x8000:
+                    offset -= 0x10000
+                # How many slots sit between the frame and the saved
+                # return address: the number of callee-saved registers
+                # that were pushed before it, plus one.
+                ra_placement[(frame_at[index] - offset) // 4] += 1
                 break
 
     gp_uses = {
@@ -133,10 +148,13 @@ def measure(data: bytes) -> dict[str, object]:
             "on_top_of_the_frame": True,
         },
         "equality_idiom": {
+            "sltu_total": len(sltu),
+            "sltu_same_register_immediate_1": equality_idiom,
             "sltiu_total": len(sltiu),
-            "sltiu_same_register_immediate_1": equality_idiom,
-            "note": ("the GCC debug-C mode tests equality with sltiu rX,rX,1; "
-                     "its absence is a property of the compiler "
+            "sltiu_same_register_immediate_1": equality_idiom_imm,
+            "note": ("the GCC built in its debug-C mode tests equality with "
+                     "sltu rX,rX,1, or with sltiu when the immediate is one; "
+                     "the absence of both is a property of the compiler "
                      "configuration, not of the code"),
         },
         "position_independence": {
@@ -147,6 +165,19 @@ def measure(data: bytes) -> dict[str, object]:
                      "addresses"),
         },
         "distance_frame_to_save_of_ra": dict(sorted(distance.items())),
+        "prologue_rule": {
+            "note": ("where the saved return address sits inside the frame, "
+                     "in slots of four bytes from the bottom of the frame. "
+                     "The value is the number of callee-saved registers "
+                     "that were pushed before it, plus one. A value that is "
+                     "always 1 means the return address is on top of the "
+                     "frame, the way a modern GCC puts it; a spread means "
+                     "the callee-saved registers are pushed first, in a "
+                     "save area aligned on sixteen bytes."),
+            "slots_below_ra": dict(sorted(ra_placement.items())),
+            "frames_multiple_of_16": multiples[16],
+            "distinct_frame_sizes": len(distinct),
+        },
     }
 
 
