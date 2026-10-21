@@ -49,6 +49,15 @@ def read_sweep(path: Path) -> dict[str, dict[str, str]]:
     return {row["start"]: row for row in rows if row.get("start")}
 
 
+def read_named(path: Path) -> list[dict[str, str]]:
+    """Read a naming deliverable: start, name, evidence, confidence, corrects."""
+    if not path.is_file():
+        return []
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    return [row for row in rows if row.get("start") and row.get("name")]
+
+
 def merge(work: Path, out: Path) -> dict[str, object]:
     lots = sorted(work.glob("L*/layout.tsv"))
     if not lots:
@@ -61,6 +70,7 @@ def merge(work: Path, out: Path) -> dict[str, object]:
     named = 0
     disagreements = 0
     checked = 0
+    corrections = 0
 
     for lot in lots:
         for row in read_lot(lot):
@@ -105,6 +115,31 @@ def merge(work: Path, out: Path) -> dict[str, object]:
                 "bound_agrees": agrees,
             })
 
+    # The naming assignments: the assert mechanism and the naming pass.
+    for source in (work / "ASSERT" / "names.tsv", work / "NAMES" / "names.tsv"):
+        for row in read_named(source):
+            start = row["start"]
+            target = next((item for item in merged if item["start"] == start), None)
+            if target is None:
+                continue
+            proposed = row["name"]
+            if not proposed or proposed.startswith("func_"):
+                continue
+            if proposed == target["name"]:
+                continue
+            if not target["name"].startswith("func_"):
+                corrections += 1
+                target["name_evidence"] = (
+                    f"corrects {target['name']}; {row.get('evidence', '-')}")
+            else:
+                target["name_evidence"] = row.get("evidence", "-")
+            target["name"] = proposed
+            candidate = row.get("confidence", "")
+            if candidate in VALID_CONFIDENCE:
+                target["confidence"] = candidate
+            named = sum(1 for item in merged
+                        if item["name"] and not item["name"].startswith("func_"))
+
     merged.sort(key=lambda row: int(row["start"], 16))
 
     out.joinpath("boot").mkdir(parents=True, exist_ok=True)
@@ -121,6 +156,7 @@ def merge(work: Path, out: Path) -> dict[str, object]:
         "class_counts": counts,
         "confidence_counts": confidence,
         "named": named,
+        "name_corrections": corrections,
         "sweep_checked": checked,
         "sweep_disagreements": disagreements,
         "sweep_agreement_rate": (
@@ -143,6 +179,7 @@ def main(argv: list[str] | None = None) -> int:
     for name, count in summary["class_counts"].items():
         print(f"  {name:<14}: {count}")
     print(f"named           : {summary['named']}")
+    print(f"corrections     : {summary['name_corrections']}")
     print(f"sweep checked   : {summary['sweep_checked']}")
     print(f"sweep disagreed : {summary['sweep_disagreements']}")
     rate = summary["sweep_agreement_rate"]
