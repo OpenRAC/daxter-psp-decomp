@@ -19,7 +19,7 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x000173EC	0x000175D8	492	function	func_000173EC	-	high	0x000175D8	492	yes
 0x000175D8	0x00017A40	1128	function	func_000175D8	-	high	0x00017A40	1128	yes
 0x000219A4	0x00021EA4	1280	function	func_000219A4	-	high	0x00021EA4	1280	yes
-0x000238D0	0x00023970	160	function	property_get_int	acceseur de propriete : resout l'indice par 0x00023780 puis teste le tag de type 1 (ori $a2,$zero,1) et rend la valeur 32 bits lue a +0x498	medium	0x00023970	160	yes
+0x000238D0	0x00023970	160	function	property_get_int	acceseur de propriete : resout l'indice par 0x00023780 puis teste le tag de type 1 (ori $a2,$zero,1) et rend la valeur 32 bits lue dans la table a +0x498	medium	0x00023970	160	yes
 0x00023970	0x00023A10	160	function	property_get_int	corps identique octet pour octet a 0x000238D0 (meme acceseur de propriete, tag de type 1)	medium	0x00023A10	160	yes
 0x00023A10	0x00023AAC	156	function	property_get_float	acceseur de propriete : resout l'indice par 0x00023780 puis teste le tag de type 2 (ori $a2,$zero,2) et rend un flottant (lwc1) lu dans la table a +0x4B8	medium	0x00023AAC	156	yes
 0x00023AAC	0x00023B44	152	function	func_00023AAC	-	high	0x00023B44	152	yes
@@ -41,7 +41,7 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x00053B78	0x00053C08	144	function	func_00053B78	-	high	0x00053C08	144	yes
 0x00053C08	0x00053C98	144	function	func_00053C08	-	high	0x00053C98	144	yes
 0x0005D138	0x0005D21C	228	function	func_0005D138	-	high	0x0005D21C	228	yes
-0x0005D884	0x0005DFD0	1868	function	SetupPhysicsFromFileCm	corrects CNodeXD_CFileCm; l'assert 0x0007035C du site 0x0005DD60 passe $a3 = 0x003410B6 = 'SetupPhysicsFromFileCm' (le __FUNCTION__) et $a1 = 0x00331550 = 'libs\elementsxd\cnodexd.cpp' ; 12 autres asserts du corps portent des tampons de nom '~COpenFileCm'/'~CFileCm' (code inline)	high	0x0005DFD0	1868	yes
+0x0005D884	0x0005DFD0	1868	function	SetupPhysicsFromFileCm	corrects CNodeXD_CFileCm; l'assert 0x0007035C du site 0x0005DD60 passe $a3 = 0x003410B6 = 'SetupPhysicsFromFileCm' (le __FUNCTION__) et $a1 = 0x00331550 = 'libs\elementsxd\cnodexd.cpp' ; les 12 autres asserts du corps portent des tampons de nom '~COpenFileCm' (0x00073360) et '~CFileCm' (0x00073350), c'est-a-dire du code inline	high	0x0005DFD0	1868	yes
 0x0005DFD0	0x0005E28C	700	function	func_0005DFD0	-	high	0x0005E28C	700	yes
 0x00060864	0x000609DC	376	function	func_00060864	-	high	0x000609DC	376	yes
 0x0006F2FC	0x0006F344	72	function	func_0006F2FC	-	high	0x0006F344	72	yes
@@ -83,7 +83,7 @@ start	end	size	class	name	name_evidence	confidence	sweep_end	sweep_size	bound_ag
 0x00097A34	0x000981C0	1932	function	CFile_ResolvePath	hypothese: chaine 'RADS_NETWORK_DIR' (rodata 0x00333418) + separateur '\' ; corps = resolution d'un repertoire d'environnement puis normalisation d'un chemin ; famille CFile (voisin 0x00099010 -> 'libs\core\cfile.cpp')	medium	0x000981C0	1932	yes
 0x000981C0	0x00098558	920	function	CFile_GetPath	hypothese: formats de chemin '|game_data|...' (rodata 0x00333440-0x00333634) ; corps = switch sur 26 types de fichiers, sprintf du chemin, appel a CFile_ResolvePath (0x00097A34), conversion '\'->'/'	medium	0x00098558	920	yes
 0x00098E7C	0x00098EC0	68	function	func_00098E7C	-	high	0x00098EC0	68	yes
-0x00099010	0x00099108	248	function	~CFile	corrects CFile_Close; l'assert 0x0007035C du site 0x0009908C passe $a3 = 0x003428A5 = '~CFile' ; le corps est l'entree 0x00353114 de la table de methodes virtuelles de CFile (CFile_Open/CFile_Exists 0x0035318C, Close 0x003531BC) : il appelle Close (0x00098EC0) puis reecrit la table en 0x0034B52C	high	0x00099108	248	yes
+0x00099010	0x00099108	248	function	~CFile	corrects CFile_Close; l'assert 0x0007035C du site 0x0009908C passe $a3 = 0x003428A5 = '~CFile' ; le corps est l'entree 0x00353114 de la table de methodes virtuelles de CFile (Exists a 0x0035318C, Close a 0x003531BC) : il appelle Close (0x00098EC0) puis libere le descripteur en +4	high	0x00099108	248	yes
 0x0009C934	0x0009C994	96	function	func_0009C934	-	high	0x0009C994	96	yes
 0x0009D488	0x0009D6A0	536	function	func_0009D488	-	high	0x0009D6A0	536	yes
 0x000A407C	0x000A417C	256	function	func_000A407C	-	high	0x000A417C	256	yes
